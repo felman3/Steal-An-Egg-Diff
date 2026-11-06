@@ -1,0 +1,246 @@
+@import 'tailwindcss';
+
+/* Manual theme toggle wins over the OS preference in both directions. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens (validated data-viz palette; see docs/DESIGN.md)
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --page: #f6f6f3;
+  --surface: #fcfcfb;
+  --surface-sunken: #f1f1ed;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-muted: #6f6e69;
+  --axis-ink: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --line: rgba(11, 11, 11, 0.1);
+  --line-strong: rgba(11, 11, 11, 0.18);
+  --accent: #256abf;
+  --accent-hover: #1c5cab;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6f0fc;
+  --focus: #2a78d6;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-muted: #b9b8b1;
+  --wash-1: rgba(42, 120, 214, 0.1);
+
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+  --status-neutral: #8a8984;
+  --status-good-bg: rgba(12, 163, 12, 0.1);
+  --status-warning-bg: rgba(250, 178, 25, 0.16);
+  --status-critical-bg: rgba(208, 59, 59, 0.1);
+  --status-neutral-bg: rgba(137, 135, 129, 0.12);
+  --zone-warning: rgba(250, 178, 25, 0.12);
+  --zone-critical: rgba(208, 59, 59, 0.08);
+
+  --delta-good: #006300;
+  --delta-bad: #b42828;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-sunken: #222220;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-muted: #9d9c95;
+    --axis-ink: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --line: rgba(255, 255, 255, 0.1);
+    --line-strong: rgba(255, 255, 255, 0.18);
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --accent-ink: #0b0b0b;
+    --accent-soft: rgba(57, 135, 229, 0.16);
+    --focus: #5598e7;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-muted: #5d5c57;
+    --wash-1: rgba(57, 135, 229, 0.14);
+    --status-good-bg: rgba(12, 163, 12, 0.16);
+    --status-warning-bg: rgba(250, 178, 25, 0.16);
+    --status-critical-bg: rgba(208, 59, 59, 0.2);
+    --status-neutral-bg: rgba(137, 135, 129, 0.18);
+    --zone-warning: rgba(250, 178, 25, 0.1);
+    --zone-critical: rgba(208, 59, 59, 0.12);
+    --delta-good: #0ca30c;
+    --delta-bad: #e66767;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-sunken: #222220;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --ink-muted: #9d9c95;
+  --axis-ink: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --accent: #3987e5;
+  --accent-hover: #5598e7;
+  --accent-ink: #0b0b0b;
+  --accent-soft: rgba(57, 135, 229, 0.16);
+  --focus: #5598e7;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-muted: #5d5c57;
+  --wash-1: rgba(57, 135, 229, 0.14);
+  --status-good-bg: rgba(12, 163, 12, 0.16);
+  --status-warning-bg: rgba(250, 178, 25, 0.16);
+  --status-critical-bg: rgba(208, 59, 59, 0.2);
+  --status-neutral-bg: rgba(137, 135, 129, 0.18);
+  --zone-warning: rgba(250, 178, 25, 0.1);
+  --zone-critical: rgba(208, 59, 59, 0.12);
+  --delta-good: #0ca30c;
+  --delta-bad: #e66767;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--status-good);
+  --color-warning: var(--status-warning);
+  --color-critical: var(--status-critical);
+  --color-neutral: var(--status-neutral);
+  --color-good-bg: var(--status-good-bg);
+  --color-warning-bg: var(--status-warning-bg);
+  --color-critical-bg: var(--status-critical-bg);
+  --color-neutral-bg: var(--status-neutral-bg);
+  --color-delta-good: var(--delta-good);
+  --color-delta-bad: var(--delta-bad);
+}
+
+@layer base {
+  html {
+    background: var(--page);
+    color: var(--ink);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  button,
+  select,
+  input {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .field {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0.55rem 0.75rem;
+    min-height: 2.5rem;
+  }
+  .field:disabled {
+    background: var(--surface-sunken);
+    color: var(--ink-2);
+    cursor: not-allowed;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 10px;
+    padding: 0.55rem 0.95rem;
+    min-height: 2.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface-sunken);
+  }
+}
+
+/* Charts: recessive chrome, never-clipped labels */
+.recharts-cartesian-grid line {
+  stroke: var(--grid);
+}
+.recharts-text {
+  fill: var(--axis-ink);
+}
+.recharts-wrapper svg {
+  overflow: visible;
+}
+.refreshing {
+  opacity: 0.55;
+  transition: opacity 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

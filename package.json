@@ -1,0 +1,48 @@
+{
+  "name": "sete-academic-analytics-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Academic prototype: database-backed academic performance and SETE analytics dashboard (synthetic demonstration data).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc -b --pretty",
+    "lint": "eslint .",
+    "test:e2e": "playwright test --trace off",
+    "test:security": "node scripts/test/verify-security.mjs",
+    "db:apply": "node scripts/db/apply.mjs",
+    "db:seed": "node scripts/db/apply.mjs --only-seed",
+    "db:demo-users": "node scripts/db/create-demo-users.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "5.2.8",
+    "@supabase/supabase-js": "2.118.0",
+    "lucide-react": "1.60.0",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "react-router": "7.18.4",
+    "recharts": "3.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "22.20.5",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "5.2.0",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.6",
+    "globals": "16.5.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "7.3.7"
+  }
+}

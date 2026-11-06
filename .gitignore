@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+dist-ssr/
+.vercel/
+*.tsbuildinfo
+
+# local environment (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# tests
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# logs & OS/editor files
+*.log
+npm-debug.log*
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
