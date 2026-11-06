@@ -13,7 +13,7 @@ Security enforces role-based access.
 
 | | |
 |---|---|
-| **Live app** | _see [Deployment status](#deployment-status)_ |
+| **Live app** | **https://sete-analytics-dashboard.vercel.app** (health check: [`/api/health`](https://sete-analytics-dashboard.vercel.app/api/health)) |
 | **Repository** | https://github.com/felman3/Steal-An-Egg-Diff (branch `claude/sweet-franklin-7ux0p5`) |
 | **Database** | Supabase PostgreSQL 17 (project `ulcnqgrvqgnihwenqech`, region `ap-northeast-2`) |
 | **Docs** | [Database schema](docs/DATABASE.md) · [Security & RBAC](docs/SECURITY.md) · [Deployment](docs/DEPLOYMENT.md) |
@@ -118,8 +118,16 @@ Setting up a fresh database is covered in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.m
 
 ## Deployment status
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#current-deployment) for the live URL, the
-verification evidence, and any steps still pending.
+Deployed on Vercel (production, region `icn1`, next to the database) from this repository. Verified on the live site:
+
+- Pages and deep links load publicly. `/api/health` reaches the database from the serverless function.
+- **12/12** Playwright end-to-end tests pass against the live URL. They cover sign-in, the five KPIs and three charts, all four filters, the empty state, the role restrictions, and mobile layout.
+- **38/38** live authorization checks pass (`npm run test:security`).
+
+Details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#current-deployment).
+
+![Login page with demonstration accounts](docs/screenshots/login.png)
+![Overview dashboard (administrator)](docs/screenshots/overview-admin.png)
 
 ## Limitations (academic prototype)
 

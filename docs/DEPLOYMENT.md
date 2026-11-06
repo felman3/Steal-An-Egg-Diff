@@ -7,14 +7,24 @@ serverless function) + **GitHub**.
 
 | Item | Value |
 |---|---|
-| Supabase project | `ulcnqgrvqgnihwenqech` (`https://ulcnqgrvqgnihwenqech.supabase.co`), region `ap-northeast-2` |
-| Database state | 3 migrations applied, synthetic seed loaded, 4 demo accounts provisioned, auth hardened |
+| **Production URL** | **https://sete-analytics-dashboard.vercel.app** |
+| Health check | https://sete-analytics-dashboard.vercel.app/api/health |
+| Vercel project | `sete-analytics-dashboard` (`prj_9cTra9p2CwCmdo7wzN5ySalSpuoX`), Git-connected to the repo; functions in `icn1` (Seoul); Node 22.x |
+| Deployment protection | Standard: the production domain is public; preview and per-deployment URLs require Vercel login |
+| Supabase project | `ulcnqgrvqgnihwenqech` (`https://ulcnqgrvqgnihwenqech.supabase.co`), region `ap-northeast-2` (Seoul) |
+| Supabase Auth | Site URL is the production URL; sign-up is disabled; 4 demo accounts |
 | GitHub | https://github.com/felman3/Steal-An-Egg-Diff, branch `claude/sweet-franklin-7ux0p5` |
-| Vercel | _pending: see "Status" below_ |
 
-**Status.** The database layer is live and verified: 38/38 live authorization checks
-pass. The Vercel deployment needs the account owner to approve the Vercel connector's
-access to their team, or to import the repository manually (section 3).
+### Verification of the live deployment (2026-11-06)
+
+| Check | Result |
+|---|---|
+| `GET /`, `/login`, deep link `/faculty?ay=4`, `/favicon.svg` with no login | 200 (public; SPA rewrite works) |
+| `GET /api/health` (serverless → database) | 200 `{"status":"ok","database":{"terms":8,"colleges":4,"departments":11,"kpis":5,…},"region":"icn1"}` |
+| Security headers | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` all present |
+| `E2E_BASE_URL=https://sete-analytics-dashboard.vercel.app npm run test:e2e` | **12 passed** (desktop and mobile) |
+| `npm run test:security` | **38/38 passed** |
+| Browser console on the live site | no errors |
 
 ## 1. Environment variables
 
