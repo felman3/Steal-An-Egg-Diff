@@ -125,14 +125,16 @@ Status ladder computed in the database: **On target → Below target (no alert) 
 ### Labeled components
 | # | Component | Type | Explanation |
 |---|---|---|---|
-| ① | **Filter bar** — Academic year · Semester · College · Department · Reset | **Interactive feature 1** | Every card, chart and alert recomputes in the database for the selection. Department options narrow to the chosen college. Filters are kept in the URL, so a view can be bookmarked or shared |
+| ① | **Header band with filters** — Academic year · Semester · College · Department (each with an icon) · Reset | **Interactive feature 1** | Every card, chart and alert recomputes in the database for the selection. Department options narrow to the chosen college. Filters are kept in the URL, so a view can be bookmarked or shared |
 | ② | **Five KPI cards** | KPI cards | Value, status badge, change vs. the previous comparable period, target, sample size (n), sparkline; category label (Academic operations / Teaching effectiveness); hover shows objective and formula; SETE cards show a caution note when the response rate is low |
-| ③ | **Alerts panel** | **Warning / alert mechanism** | Lists every KPI (overall and per department) past its stored warning or critical threshold, most severe first, **with the recommended management action** |
+| ③ | **Alerts panel** | **Warning / alert mechanism** | Shows the three most severe KPIs (overall and per department) past their stored warning or critical threshold, **with the recommended management action**, and links to the full list |
 | ④ | **KPI trend by term** | Visualization 1 — line chart | The chosen KPI across all semesters, with dashed target line, shaded warning (amber) and critical (red) zones, and the selected period highlighted. *Best for SETE results across semesters* |
 | ⑤ | **KPI by department** | Visualization 2 — horizontal bar chart | Departments sorted best→worst, bars colored by status, each with its own target tick. **Interactive feature 2: click a bar to drill the whole dashboard down to that department** |
-| ⑥ | **SETE criteria breakdown** | Visualization 3 — grouped bar chart | Mean score for each SETE criterion for the selection vs. the institution benchmark; names the lowest-rated area. *Best for SETE results across evaluation dimensions* |
+| ⑥ | **SETE criteria breakdown** | Visualization 3 — grouped bar chart | Mean score for each SETE criterion for the selection vs. the institution benchmark, with a **Development focus** (lowest-rated criterion) and **Strength** summary. *Best for SETE results across evaluation dimensions* |
+| — | Collapsible sidebar | Navigation | Navigation to the supporting pages; collapses to icons to give the dashboard more room |
 | — | Measure selector / clicking a KPI card | Interaction | Switches charts ④ and ⑤ to that KPI |
 | — | Chart / Table toggle on every chart | Accessibility | Exact numbers, usable with a screen reader |
+| — | Colour coding | Design | One blue palette: dark blue = on target, light blue = below target; amber and red only for warning and critical |
 
 Supporting pages: **Department scorecard** (all KPIs × departments, grade distribution), **Faculty SETE results** (confidential
 watchlist with the responsible-use notice), **Targets & thresholds** (edit targets, college overrides, restore defaults, audit trail),

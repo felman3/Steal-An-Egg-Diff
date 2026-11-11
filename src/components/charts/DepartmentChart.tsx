@@ -5,7 +5,7 @@ import { STATUS_FILL } from '../../lib/status';
 import { barDomain, fmt, tickFormatter } from './chartUtils';
 import { TooltipBox, TooltipRow } from './ChartTooltip';
 
-const BAR = 18;
+const BAR = 16;
 
 interface Datum {
   id: number;
@@ -58,7 +58,7 @@ export function DepartmentChart({
   const missing = rows.filter((r) => r.value === null).map((r) => r.department_code);
 
   const domain = barDomain(kpi.unit, data.flatMap((d) => [d.value, d.target]));
-  const height = Math.max(180, data.length * 34 + 48);
+  const height = Math.max(180, data.length * 30 + 44);
   const summary = `${kpi.kpi_name} by department: ${data.map((d) => `${d.name} ${fmt(d.value, kpi.unit, kpi.decimals)} (${STATUS_LABEL[d.status]})`).join('; ')}.`;
 
   return (

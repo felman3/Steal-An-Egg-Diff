@@ -44,6 +44,11 @@
 
   --delta-good: #006300;
   --delta-bad: #b42828;
+
+  /* Page header band + coherent single-hue data palette */
+  --header: #1d4e89;
+  --header-ink: #ffffff;
+  --series-1-soft: #a9c9ee;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -77,6 +82,9 @@
     --zone-critical: rgba(208, 59, 59, 0.12);
     --delta-good: #0ca30c;
     --delta-bad: #e66767;
+    --header: #173a63;
+    --header-ink: #f0efec;
+    --series-1-soft: #2f5582;
   }
 }
 
@@ -110,6 +118,9 @@
   --zone-critical: rgba(208, 59, 59, 0.12);
   --delta-good: #0ca30c;
   --delta-bad: #e66767;
+  --header: #173a63;
+  --header-ink: #f0efec;
+  --series-1-soft: #2f5582;
 }
 
 @theme inline {
@@ -136,6 +147,8 @@
   --color-neutral-bg: var(--status-neutral-bg);
   --color-delta-good: var(--delta-good);
   --color-delta-bad: var(--delta-bad);
+  --color-header: var(--header);
+  --color-header-ink: var(--header-ink);
 }
 
 @layer base {
@@ -218,6 +231,17 @@
   }
   .btn-ghost:hover:not(:disabled) {
     background: var(--surface-sunken);
+  }
+  /* Controls placed on the coloured page header */
+  .bg-header .btn-ghost {
+    color: var(--header-ink);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+  .bg-header .btn-ghost:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .bg-header .field {
+    border-color: transparent;
   }
 }
 

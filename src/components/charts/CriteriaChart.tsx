@@ -30,13 +30,15 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
     institution: r.institution_mean,
     n: r.responses,
   }));
-  const weakest = data.filter((d) => d.scope !== null).sort((a, b) => (a.scope as number) - (b.scope as number))[0];
+  const rated = data.filter((d) => d.scope !== null).sort((a, b) => (a.scope as number) - (b.scope as number));
+  const weakest = rated[0];
+  const strongest = rated[rated.length - 1];
   const summary = `Mean SETE score by criterion for ${scopeLabel}: ${data.map((d) => `${d.full} ${d.scope?.toFixed(2) ?? 'suppressed'}`).join('; ')}.`;
 
   return (
-    <div data-testid="criteria-chart">
-      <div role="img" aria-label={summary}>
-        <ResponsiveContainer width="100%" height={compare ? 260 : 210}>
+    <div data-testid="criteria-chart" className="flex flex-1 flex-col">
+      <div role="img" aria-label={summary} className="relative flex-1" style={{ minHeight: compare ? 250 : 210 }}>
+        <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
           <BarChart data={data} layout="vertical" margin={{ top: 4, right: 44, bottom: 4, left: 4 }} barGap={2} barCategoryGap="22%">
             <CartesianGrid horizontal={false} />
             <XAxis type="number" domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tickLine={false} axisLine={{ stroke: 'var(--axis)' }} tick={{ fontSize: 12 }} />
@@ -79,8 +81,27 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
         ) : (
           <span>Scale: 1 = poor · 5 = outstanding</span>
         )}
-        {weakest && <span>Lowest-rated area: <strong className="text-ink">{weakest.full}</strong></span>}
       </div>
+      {weakest && strongest && weakest !== strongest && (
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2" data-testid="criteria-insight">
+          <div className="rounded-lg bg-sunken px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Development focus</p>
+            <p className="mt-0.5 text-sm font-semibold text-ink">{weakest.full}</p>
+            <p className="text-xs text-ink-2">
+              Lowest-rated criterion ({weakest.scope?.toFixed(2)}
+              {compare && weakest.institution !== null ? `; institution ${weakest.institution.toFixed(2)}` : ''}). A candidate theme for faculty
+              development.
+            </p>
+          </div>
+          <div className="rounded-lg bg-sunken px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Strength</p>
+            <p className="mt-0.5 text-sm font-semibold text-ink">{strongest.full}</p>
+            <p className="text-xs text-ink-2">
+              Highest-rated criterion ({strongest.scope?.toFixed(2)}). Gap to the focus area: {((strongest.scope ?? 0) - (weakest.scope ?? 0)).toFixed(2)}.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

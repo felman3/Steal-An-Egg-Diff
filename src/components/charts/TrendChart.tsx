@@ -12,7 +12,7 @@ interface Point {
   selected: boolean;
 }
 
-export function TrendChart({ rows, kpi, height = 330 }: { rows: TrendRow[]; kpi: KpiSummaryRow; height?: number }) {
+export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; kpi: KpiSummaryRow; minHeight?: number }) {
   const data: Point[] = rows
     .slice()
     .sort((a, b) => a.term_start.localeCompare(b.term_start))
@@ -34,8 +34,8 @@ export function TrendChart({ rows, kpi, height = 330 }: { rows: TrendRow[]; kpi:
   const summary = `${kpi.kpi_name} by term: ${data.map((d) => `${d.full} ${fmt(d.value, kpi.unit, kpi.decimals)}`).join('; ')}. Target ${fmt(kpi.target, kpi.unit, kpi.decimals)}.`;
 
   return (
-    <div role="img" aria-label={summary} data-testid="trend-chart">
-      <ResponsiveContainer width="100%" height={height}>
+    <div role="img" aria-label={summary} data-testid="trend-chart" className="relative flex-1" style={{ minHeight }}>
+      <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
         <LineChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: 0 }}>
           <CartesianGrid vertical={false} strokeWidth={1} />
           {zones && (

@@ -117,7 +117,7 @@ npm run test:security         # live access-control checks (needs .env.local)
 ## Verification
 
 - Type-check and lint pass with 0 problems, and the production build succeeds.
-- **12/12** Playwright tests pass. They cover sign-in, the 5 KPI cards with categories, alerts with actions, all 3 charts, all four
+- **13/13** Playwright tests pass. They cover sign-in, the collapsible sidebar, the 5 KPI cards with categories, alerts with actions, all 3 charts, all four
   filters, department drill-down, the empty state, the responsible-use notice, the unauthorized account being denied, and mobile layout.
 - **31/31** live access-control checks pass. The unauthorized account reads 0 rows from every table and is refused every analytics function.
 

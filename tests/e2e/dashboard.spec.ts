@@ -129,3 +129,15 @@ test.describe('access control (only authorized academic administrators)', () => 
     await expect(page.getByTestId('faculty-table')).toHaveCount(0);
   });
 });
+
+test('the sidebar collapses to icons and the choice is remembered', async ({ page }) => {
+  await signInAs(page, 'admin');
+  await waitForKpis(page);
+  await expect(page.getByTestId('page-header')).toContainText('Academic Administrator Dashboard');
+  await page.getByTestId('toggle-sidebar').click();
+  await expect(page.getByTestId('sidebar')).toHaveAttribute('data-collapsed', 'true');
+  await page.reload();
+  await expect(page.getByTestId('sidebar')).toHaveAttribute('data-collapsed', 'true');
+  await page.getByTestId('toggle-sidebar').click();
+  await expect(page.getByTestId('sidebar')).toHaveAttribute('data-collapsed', 'false');
+});

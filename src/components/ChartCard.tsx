@@ -92,7 +92,7 @@ export function ChartCard({
           )}
         </div>
       </header>
-      <div className={`min-w-0 flex-1 ${isRefreshing ? 'refreshing' : ''}`} aria-busy={isLoading || isRefreshing}>
+      <div className={`flex min-w-0 flex-1 flex-col ${isRefreshing ? 'refreshing' : ''}`} aria-busy={isLoading || isRefreshing}>
         {body}
       </div>
       {footer && !isLoading && !error && !isEmpty && <div className="mt-3 border-t border-line pt-3">{footer}</div>}

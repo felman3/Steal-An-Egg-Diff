@@ -309,7 +309,7 @@ export function TargetsPage() {
             <div className="flex flex-wrap items-center gap-2">
               {resetState === 'confirm' ? (
                 <>
-                  <span className="text-sm text-ink-2">Restore all seeded targets and settings?</span>
+                  <span className="text-sm opacity-90">Restore all seeded targets and settings?</span>
                   <button type="button" className="btn btn-primary" onClick={() => void reset()}>
                     Restore
                   </button>
@@ -322,8 +322,8 @@ export function TargetsPage() {
                   <RotateCcw size={15} aria-hidden /> {resetState === 'busy' ? 'Restoring…' : 'Restore defaults'}
                 </button>
               )}
-              {resetState === 'done' && <span className="text-sm text-delta-good" role="status">Defaults restored</span>}
-              {resetState === 'error' && <span className="text-sm text-delta-bad" role="alert">{resetError}</span>}
+              {resetState === 'done' && <span className="text-sm font-semibold" role="status">Defaults restored</span>}
+              {resetState === 'error' && <span className="rounded bg-critical-bg px-2 py-0.5 text-sm font-semibold" role="alert">{resetError}</span>}
             </div>
           ) : undefined
         }

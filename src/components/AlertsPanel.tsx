@@ -53,7 +53,7 @@ export function AlertsPanel({
   }
   alerts.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.scope.localeCompare(b.scope));
   const critical = alerts.filter((a) => a.status === 'critical').length;
-  const shown = alerts.slice(0, 5);
+  const shown = alerts.slice(0, 3);
 
   return (
     <section className="card flex flex-col p-4 sm:p-5" aria-labelledby="alerts-heading" data-testid="alerts-panel">
