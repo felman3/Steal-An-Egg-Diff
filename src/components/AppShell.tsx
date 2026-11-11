@@ -1,4 +1,4 @@
-import { Building2, GraduationCap, Info, LayoutDashboard, Lock, LogOut, Menu, Monitor, Moon, Sun, Target, Users, X } from 'lucide-react';
+import { Building2, GraduationCap, Info, LayoutDashboard, LogOut, Menu, Monitor, Moon, Sun, Target, Users, X } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
@@ -10,28 +10,19 @@ import { PrototypeNotice } from './PrototypeNotice';
 import { ErrorState, LoadingState } from './States';
 
 const NAV = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/departments', label: 'Department scorecard', icon: Building2 },
-  { to: '/faculty', label: 'Faculty SETE results', icon: Users, restrictedFor: ['viewer'] },
+  { to: '/faculty', label: 'Faculty SETE results', icon: Users },
   { to: '/targets', label: 'Targets & thresholds', icon: Target },
   { to: '/about', label: 'About the data', icon: Info },
 ] as const;
 
-function scopeText(role: string, college?: string | null, department?: string | null) {
-  if (role === 'dean') return college ?? '';
-  if (role === 'chair') return department ?? '';
-  if (role === 'viewer') return 'Aggregates only';
-  return 'All colleges';
-}
-
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
-  const { profile } = useAuth();
   const location = useLocation();
   return (
     <nav aria-label="Main" className="flex flex-col gap-1">
       {NAV.map((item) => {
         const Icon = item.icon;
-        const locked = 'restrictedFor' in item && profile && (item.restrictedFor as readonly string[]).includes(profile.role);
         return (
           <NavLink
             key={item.to}
@@ -46,7 +37,6 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
           >
             <Icon size={17} aria-hidden />
             <span className="flex-1">{item.label}</span>
-            {locked && <Lock size={13} className="text-ink-muted" aria-label="restricted for your role" />}
           </NavLink>
         );
       })}
@@ -63,7 +53,7 @@ function UserCard() {
     <div className="rounded-xl border border-line bg-surface p-3" data-testid="user-card">
       <p className="truncate text-sm font-semibold text-ink">{profile.full_name}</p>
       <p className="mt-0.5 text-xs text-ink-2" data-testid="user-role">
-        {ROLE_LABEL[profile.role]} · {scopeText(profile.role, profile.college?.code, profile.department?.code)}
+        {ROLE_LABEL[profile.role]} · all colleges
       </p>
       {profile.is_demo && (
         <span className="mt-2 inline-block rounded-full bg-warning-bg px-2 py-0.5 text-[11px] font-semibold text-ink">Demo account</span>
@@ -88,7 +78,7 @@ function Brand() {
       </span>
       <div className="leading-tight">
         <p className="text-sm font-semibold text-ink">Academic Quality</p>
-        <p className="text-xs text-ink-2">SETE &amp; performance analytics</p>
+        <p className="text-xs text-ink-2">Academic Administrator</p>
       </div>
     </div>
   );

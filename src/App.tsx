@@ -46,10 +46,13 @@ function RequireAuth() {
   if (status === 'no_profile') {
     return (
       <FullPage>
-        <div className="card max-w-md p-6 text-center">
-          <ShieldAlert className="mx-auto text-warning" size={28} aria-hidden />
-          <h1 className="mt-3 text-lg font-semibold text-ink">No dashboard access</h1>
-          <p className="mt-2 text-sm text-ink-2">Your account is signed in but has not been assigned a dashboard role. Ask an administrator to grant access.</p>
+        <div className="card max-w-md p-6 text-center" data-testid="access-denied">
+          <ShieldAlert className="mx-auto text-critical" size={28} aria-hidden />
+          <h1 className="mt-3 text-lg font-semibold text-ink">Access denied</h1>
+          <p className="mt-2 text-sm text-ink-2">
+            This dashboard is restricted to <strong className="text-ink">authorized academic administrators</strong>. Your account signed in
+            successfully, but it is not authorized, so the database returns no student, grade or SETE data to it.
+          </p>
           <button type="button" className="btn btn-ghost mt-5" onClick={() => void signOut()}>
             <LogOut size={15} aria-hidden /> Sign out
           </button>

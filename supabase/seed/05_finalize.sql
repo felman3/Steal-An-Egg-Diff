@@ -2,6 +2,7 @@
 -- SYNTHETIC DEMONSTRATION DATA (5/5): build analytics facts and clean up
 -- =============================================================================
 
+select private.apply_kpi_metadata();  -- case-study KPI metadata (migration 20261111000100)
 select private.refresh_analytics();
 
 analyze public.class_sections;

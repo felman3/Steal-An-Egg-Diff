@@ -1,8 +1,7 @@
-import { History, Lock, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { History, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '../auth/AuthProvider';
 import { PageHeader } from '../components/AppShell';
-import { ErrorState, LoadingState, RestrictedState } from '../components/States';
+import { ErrorState, LoadingState } from '../components/States';
 import { useFilters } from '../filters/FiltersProvider';
 import {
   createCollegeOverride,
@@ -16,7 +15,7 @@ import {
   type TargetInput,
 } from '../lib/api';
 import { toAppError } from '../lib/errors';
-import { formatDateTime, ROLE_LABEL } from '../lib/format';
+import { formatDateTime } from '../lib/format';
 import type { AnalyticsSetting, College, KpiDefinition, KpiTargetRow } from '../lib/types';
 import { invalidateQueries, useQuery } from '../lib/useQuery';
 
@@ -272,12 +271,12 @@ function SettingRow({ setting, isAdmin }: { setting: AnalyticsSetting; isAdmin: 
 }
 
 export function TargetsPage() {
-  const { profile } = useAuth();
   const { reference } = useFilters();
-  const isAdmin = profile?.role === 'admin';
+  // Only authorized academic administrators can reach any page (see RequireAuth + RLS).
+  const isAdmin = true;
   const methodology = useQuery('methodology', fetchMethodology);
   const targets = useQuery('targets', fetchKpiTargets);
-  const audit = useQuery(isAdmin ? 'audit' : null, () => fetchTargetAudit(25));
+  const audit = useQuery('audit', () => fetchTargetAudit(25));
   const [resetState, setResetState] = useState<'idle' | 'confirm' | 'busy' | 'done' | 'error'>('idle');
   const [resetError, setResetError] = useState('');
 
@@ -330,15 +329,6 @@ export function TargetsPage() {
         }
       />
 
-      {!isAdmin && (
-        <p className="mb-5 flex items-start gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink-2" data-testid="targets-readonly">
-          <Lock size={16} className="mt-0.5 shrink-0" aria-hidden />
-          <span>
-            Read-only. Only administrators can change targets and thresholds (your role: <strong className="text-ink">{profile ? ROLE_LABEL[profile.role] : '—'}</strong>).
-            Row-Level Security rejects any write attempt from other roles.
-          </span>
-        </p>
-      )}
 
       {error ? (
         <div className="card">
@@ -369,9 +359,7 @@ export function TargetsPage() {
             <h2 id="audit-heading" className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-ink">
               <History size={16} aria-hidden /> Change history
             </h2>
-            {!isAdmin ? (
-              <RestrictedState minHeight={140} message="The audit trail of target changes is visible to administrators only." />
-            ) : audit.error ? (
+            {audit.error ? (
               <ErrorState error={audit.error} onRetry={audit.refetch} minHeight={140} />
             ) : audit.isLoading ? (
               <LoadingState minHeight={140} />

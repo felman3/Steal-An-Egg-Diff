@@ -1,4 +1,5 @@
-export type AppRole = 'admin' | 'dean' | 'chair' | 'viewer';
+/** The dashboard serves one user type: the authorized academic administrator. */
+export type AppRole = 'admin';
 
 export type KpiCode = 'sete_mean' | 'sete_response_rate' | 'pass_rate' | 'mean_gwa' | 'faculty_standard_rate';
 export type KpiUnit = 'rating' | 'percent' | 'grade';
@@ -148,7 +149,13 @@ export interface KpiDefinition {
   min_value: number;
   max_value: number;
   sort_order: number;
+  category: KpiCategory | null;
+  objective: string | null;
+  warning_action: string | null;
+  critical_action: string | null;
 }
+
+export type KpiCategory = 'Academic operations' | 'Teaching effectiveness';
 
 export interface KpiTargetRow {
   id: number;

@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { formatDelta, formatInt, formatValue, isImprovement } from '../lib/format';
-import type { KpiSummaryRow } from '../lib/types';
+import type { KpiDefinition, KpiSummaryRow } from '../lib/types';
 import { Sparkline } from './charts/Sparkline';
 import { StatusBadge } from './StatusBadge';
 
@@ -9,10 +9,14 @@ interface Props {
   trend: (number | null)[];
   selected: boolean;
   onSelect: () => void;
+  /** Case-study metadata (category, objective, actions) from kpi_definitions. */
+  def?: KpiDefinition;
+  /** Responsible-interpretation caution, e.g. low SETE response rate. */
+  caution?: string | null;
 }
 
 /** Stat tile: label · value · delta vs a named period · target · sparkline. */
-export function KpiCard({ kpi, trend, selected, onSelect }: Props) {
+export function KpiCard({ kpi, trend, selected, onSelect, def, caution }: Props) {
   const delta = kpi.value !== null && kpi.previous_value !== null ? kpi.value - kpi.previous_value : null;
   const improved = delta === null ? null : isImprovement(Number(delta.toFixed(kpi.decimals)), kpi.direction);
   const DeltaIcon = delta === null || improved === null ? Minus : delta > 0 ? ArrowUp : ArrowDown;
@@ -24,8 +28,13 @@ export function KpiCard({ kpi, trend, selected, onSelect }: Props) {
       aria-pressed={selected}
       data-testid={`kpi-${kpi.kpi_code}`}
       className={`card group flex h-full min-w-0 flex-col p-4 text-left transition-shadow hover:shadow-md ${selected ? 'ring-2 ring-accent ring-offset-0' : ''}`}
-      title={`${kpi.description}\nFormula: ${kpi.formula}\nSource: ${kpi.data_source}`}
+      title={`${def?.objective ? `Objective: ${def.objective}\n` : ''}${kpi.description}\nFormula: ${kpi.formula}\nSource: ${kpi.data_source}`}
     >
+      {def?.category && (
+        <span className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted" data-testid={`kpi-category-${kpi.kpi_code}`}>
+          {def.category}
+        </span>
+      )}
       <span className="min-h-9 text-[13px] font-medium leading-snug text-ink-2">{kpi.kpi_name}</span>
       <span className="mt-1.5 text-[28px] font-semibold leading-none tracking-tight text-ink" data-testid={`kpi-value-${kpi.kpi_code}`}>
         {formatValue(kpi.value, kpi.unit, kpi.decimals)}
@@ -50,6 +59,11 @@ export function KpiCard({ kpi, trend, selected, onSelect }: Props) {
         Target {kpi.direction === 'lower_is_better' ? '≤' : '≥'} {formatValue(kpi.target, kpi.unit, kpi.decimals)}
         {kpi.college_specific_target && ' (college)'} · n {formatInt(kpi.sample_size)}
       </div>
+      {caution && (
+        <p className="mt-2 rounded-md bg-warning-bg px-2 py-1 text-[11px] leading-snug text-ink" data-testid={`kpi-caution-${kpi.kpi_code}`}>
+          {caution}
+        </p>
+      )}
       <div className="mt-auto pt-2">
         <Sparkline values={trend} />
       </div>

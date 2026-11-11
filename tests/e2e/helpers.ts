@@ -1,12 +1,16 @@
 import { expect, type Page } from '@playwright/test';
 
-export type DemoRole = 'admin' | 'dean' | 'chair' | 'viewer';
+export type DemoRole = 'admin' | 'unauthorized';
 
 /** Sign in through the real login page using a demo-account button. */
 export async function signInAs(page: Page, role: DemoRole) {
   await page.goto('/login');
   await expect(page.getByTestId('demo-accounts')).toBeVisible();
   await page.getByTestId(`demo-${role}`).click();
+  if (role === 'unauthorized') {
+    await expect(page.getByTestId('access-denied')).toBeVisible();
+    return;
+  }
   await page.waitForURL((url) => !url.pathname.startsWith('/login'));
   // The user card lives in the sidebar (hidden on phones), so wait for the page heading.
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

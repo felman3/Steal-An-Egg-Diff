@@ -8,6 +8,7 @@ PostgreSQL 17 on Supabase. All objects are created by the migrations in
 | `20261106000100_core_schema.sql` | Enum types, the 20 normalized tables, constraints, FK indexes |
 | `20261106000200_security_rls.sql` | Role/scope helpers, triggers (profile bootstrap, demo-credential protection, target validation and audit), RLS policies, grants |
 | `20261106000300_analytics.sql` | Materialized fact views, the KPI engine, dashboard RPCs, health probe |
+| `20261111000100_academic_admin_only.sql` | Single primary user: every policy and analytics function restricted to the authorized academic administrator; no automatic profiles; case-study college names; KPI category, objective and management actions |
 
 All rows are **synthetic demonstration data** loaded by [`supabase/seed/`](../supabase/seed).
 
@@ -36,8 +37,6 @@ erDiagram
   kpi_definitions ||--o{ kpi_target_audit : "change history"
   user_profiles ||--o{ kpi_target_audit : "changed by"
   user_profiles ||--o{ kpi_targets : "updated by"
-  colleges ||--o{ user_profiles : "dean scope"
-  departments ||--o{ user_profiles : "chair scope"
 ```
 
 `user_profiles.user_id` is also a foreign key to `auth.users(id)` (Supabase Auth).
@@ -48,7 +47,7 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `colleges` | `id`, `code` (unique, `^[A-Z]{2,8}$`), `name` (unique) | 4 synthetic colleges |
+| `colleges` | `id`, `code` (unique, `^[A-Z]{2,8}$`), `name` (unique) | 4 colleges named after the case-study structure: CICS, COE, CAS, CTE |
 | `departments` | `id`, `college_id` → colleges, `code` (unique), `name`, `established_year` | unique (college, name); 11 departments. Data Science was established in 2024, which demonstrates empty states |
 | `programs` | `id`, `department_id` → departments, `code` (unique), `name` | One degree program per department |
 | `academic_years` | `id`, `start_year` (unique), `label` (unique, must equal `YYYY-YYYY+1`), `start_date`, `end_date` | AY 2022-2023 … 2025-2026 |
@@ -74,7 +73,7 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `sete_criteria` | `id`, `code` (A–D), `name`, `description` | Commitment · Knowledge of Subject · Teaching for Independent Learning · Management of Learning |
+| `sete_criteria` | `id`, `code` (A–D), `name`, `description` | SETE = Student Evaluation of Teaching Effectiveness. Criteria: Commitment · Knowledge of Subject · Teaching for Independent Learning · Management of Learning |
 | `sete_rating_scale` | `label`, `min_score`, `max_score` | Outstanding ≥ 4.50, Very Satisfactory 4.00–4.49, … |
 | `sete_evaluations` | `id`, `section_id`, `submitted_at` | **No student identifier**, which keeps responses anonymous |
 | `sete_scores` | PK (`evaluation_id`, `criterion_id`), `score` (1–5) | One score per criterion per form |
@@ -83,11 +82,11 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `kpi_definitions` | `code` (unique), `name`, `description`, `formula`, `unit` (`rating`/`percent`/`grade`), `direction` (`higher_is_better`/`lower_is_better`), `decimals`, `min_value`, `max_value` | The five KPIs |
+| `kpi_definitions` | `code` (unique), `name`, `description`, `formula`, `unit` (`rating`/`percent`/`grade`), `direction` (`higher_is_better`/`lower_is_better`), `decimals`, `min_value`, `max_value`, `category` (Academic operations / Teaching effectiveness), `objective`, `warning_action`, `critical_action` | The five KPIs with their case-study objective and management actions |
 | `kpi_targets` | `kpi_id`, `college_id` (NULL = institution default), `target_value`, `warning_threshold`, `critical_threshold`, `notes`, `updated_at`, `updated_by` | `UNIQUE NULLS NOT DISTINCT (kpi_id, college_id)`. A trigger validates range and order for the KPI's direction |
 | `kpi_target_audit` | `kpi_id`, `college_id`, `action`, `old_values`, `new_values`, `changed_by`, `changed_at` | Append-only, written by a trigger |
 | `analytics_settings` | `key`, `value`, `default_value`, `min_value`, `max_value`, `label`, `description` | `faculty_rating_standard` (4.00), `min_evaluations_reported` (5) |
-| `user_profiles` | `user_id` → auth.users, `full_name`, `role` (`admin`/`dean`/`chair`/`viewer`), `college_id`, `department_id`, `is_demo` | A CHECK ties scope to role: dean ⇒ college only, chair ⇒ department only, admin/viewer ⇒ none |
+| `user_profiles` | `user_id` → auth.users, `full_name`, `role`, `title`, `is_demo` | **A row here is the authorization.** CHECK `user_profiles_academic_admin_only` allows only the academic-administrator role (`admin`); accounts without a row get no data |
 | `private.kpi_target_baseline` | same columns as `kpi_targets` | Seeded copy used by **Restore defaults** |
 
 ## Analytics layer
@@ -109,7 +108,7 @@ have no privileges on the views.
 
 All of them take `p_academic_year_id`, `p_semester_id`, `p_college_id` and
 `p_department_id`, where NULL means "all". Each one starts with
-`private.authorize_scope()`, which raises **42501** for out-of-scope requests.
+`private.authorize_scope()`, which raises **42501** unless the caller is an authorized academic administrator.
 
 | Function | Returns |
 |---|---|
@@ -118,8 +117,8 @@ All of them take `p_academic_year_id`, `p_semester_id`, `p_college_id` and
 | `get_department_kpis` | Department × KPI with per-department status |
 | `get_sete_criteria` | Mean per criterion for the scope vs. the institution; small-n suppression |
 | `get_grade_distribution` | Grade bands (1.00–1.50 … DRP) with counts and percentages |
-| `get_faculty_performance` | Faculty-level results. **Admin, dean and chair only** (the viewer gets 42501) |
-| `reset_kpi_targets` | Admin only: restore seeded targets and settings |
+| `get_faculty_performance` | Faculty-level SETE results (pseudonymised), with small-sample suppression |
+| `reset_kpi_targets` | Restore seeded targets and settings (academic administrator only) |
 | `app_health` | Callable by `anon` too. Non-confidential counts for `/api/health` |
 
 ## Indexes

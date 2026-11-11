@@ -1,19 +1,20 @@
 import { useId, useState } from 'react';
-import { useAuth } from '../auth/AuthProvider';
 import { PageHeader } from '../components/AppShell';
 import { StatusBadge } from '../components/StatusBadge';
-import { EmptyState, ErrorState, LoadingState, RestrictedState } from '../components/States';
+import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { useFilters } from '../filters/FiltersProvider';
-import { fetchFacultyPerformance } from '../lib/api';
+import { fetchFacultyPerformance, fetchKpiTargets, fetchMethodology } from '../lib/api';
 import { formatInt } from '../lib/format';
 import { useQuery } from '../lib/useQuery';
 
 export function FacultyPage() {
-  const { profile } = useAuth();
   const { filters, filterKey, describe } = useFilters();
-  const allowed = profile?.role === 'admin' || profile?.role === 'dean' || profile?.role === 'chair';
-  // Viewers never even send the request; the database would refuse it anyway (42501).
-  const faculty = useQuery(allowed ? `faculty|${filterKey}` : null, () => fetchFacultyPerformance(filters));
+  const faculty = useQuery(`faculty|${filterKey}`, () => fetchFacultyPerformance(filters));
+  // The response-rate warning threshold flags SETE results that are not representative enough.
+  const methodology = useQuery('methodology', fetchMethodology);
+  const targets = useQuery('targets', fetchKpiTargets);
+  const responseKpi = methodology.data?.kpis.find((k) => k.code === 'sete_response_rate');
+  const lowResponseBelow = targets.data?.find((t) => t.kpi_id === responseKpi?.id && t.college_id === null)?.warning_threshold ?? null;
   const [mode, setMode] = useState<'watchlist' | 'all'>('watchlist');
   const [search, setSearch] = useState('');
   const searchId = useId();
@@ -38,7 +39,7 @@ export function FacultyPage() {
               averages based on fewer responses than the reporting minimum are suppressed.
             </p>
           </div>
-          {allowed && faculty.data && (
+          {faculty.data && (
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex rounded-lg border border-line-strong p-0.5" role="group" aria-label="Show">
                 {(['watchlist', 'all'] as const).map((m) => (
@@ -61,17 +62,14 @@ export function FacultyPage() {
           )}
         </header>
 
-        {!allowed ? (
-          <RestrictedState
-            minHeight={320}
-            message={
-              <>
-                Individual faculty evaluation results are confidential. Your role (<strong>Viewer</strong>) can see aggregated KPIs only. Deans,
-                department chairs and administrators can view faculty-level results within their scope.
-              </>
-            }
-          />
-        ) : faculty.error ? (
+        <div className="mb-4 rounded-xl border border-line bg-sunken px-4 py-3 text-[13px] leading-relaxed text-ink-2" role="note" data-testid="responsible-use">
+          <strong className="text-ink">Responsible use of SETE.</strong> These results are one source of evidence about teaching, not a
+          verdict. Read them together with the response rate, the course context (class size, required vs. elective, first offering), peer or
+          classroom observation and teaching portfolios. They must not be the sole basis of any personnel decision. Results marked{' '}
+          <em>Low response</em> are less representative.
+        </div>
+
+        {faculty.error ? (
           <ErrorState error={faculty.error} onRetry={faculty.refetch} minHeight={320} />
         ) : faculty.isLoading ? (
           <LoadingState minHeight={320} />
@@ -112,7 +110,14 @@ export function FacultyPage() {
                     <td className="px-3 py-2.5 text-ink-2">{f.academic_rank}</td>
                     <td className="px-3 py-2.5 text-right">{f.sections}</td>
                     <td className="px-3 py-2.5 text-right">{formatInt(f.evaluations)}</td>
-                    <td className="px-3 py-2.5 text-right">{f.response_rate === null ? '—' : `${f.response_rate.toFixed(1)}%`}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      {f.response_rate === null ? '—' : `${f.response_rate.toFixed(1)}%`}
+                      {f.response_rate !== null && lowResponseBelow !== null && f.response_rate < lowResponseBelow && (
+                        <span className="ml-1.5 rounded bg-warning-bg px-1.5 py-0.5 text-[10px] font-semibold text-ink" data-testid="low-response">
+                          Low response
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5 text-right font-semibold">{f.mean_rating?.toFixed(2) ?? '—'}</td>
                     <td className="px-3 py-2.5 text-ink-2">{f.rating_band ?? 'Suppressed'}</td>
                     <td className="px-3 py-2.5 text-right text-ink-2">
@@ -127,7 +132,7 @@ export function FacultyPage() {
             </table>
           </div>
         )}
-        {allowed && faculty.data && all.length > 0 && (
+        {faculty.data && all.length > 0 && (
           <p className="mt-3 text-xs text-ink-muted">
             Status compares each mean rating with the SETE rating target for the faculty member's college (target {all[0].target.toFixed(2)},
             warning below {all[0].warning_threshold.toFixed(2)}, critical below {all[0].critical_threshold.toFixed(2)} unless overridden).

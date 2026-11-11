@@ -19,15 +19,23 @@ export function AboutPage() {
         <h2 className="text-[15px] font-semibold text-ink">Prototype and data notice</h2>
         <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-2">
           <li>
-            This is an <strong className="text-ink">academic prototype</strong> built for a case study. It is not an official university system.
+            This is an <strong className="text-ink">academic prototype</strong> for the BAT 405 case study “Enhancing the University Student and
+            Faculty Portal Through Analytics and Decision Support”, set in the context of Batangas State University (The National Engineering
+            University). It is not an official university system and is not affiliated with or endorsed by the university.
           </li>
           <li>
             Every college, department, student, faculty member, grade and SETE response is <strong className="text-ink">synthetic demonstration data</strong>,
-            generated deterministically by SQL seed scripts. Organisation names are generic; faculty are pseudonyms such as “Faculty CS-07”.
+            generated deterministically by SQL seed scripts. College names follow the case-study structure; faculty are pseudonyms such as
+            “Faculty CS-07” and students have synthetic numbers only.
           </li>
           <li>
-            The dashboard is <strong className="text-ink">not integrated</strong> with any Student and Faculty Portal or SETE platform. The data model
-            mirrors the kind of records those systems hold so that a real integration could be designed later.
+            <strong className="text-ink">Primary user:</strong> the authorized academic administrator (e.g. the Office of the Vice President for
+            Academic Affairs). No other role has access.
+          </li>
+          <li>
+            <strong className="text-ink">Existing vs. proposed:</strong> today the Student and Faculty Portal (enrolment, schedules, grades) and SETE
+            (Student Evaluation of Teaching Effectiveness) are separate systems. Integrating them, as this dashboard does with synthetic data, is
+            the <strong className="text-ink">proposed enhancement</strong>; no real integration exists.
           </li>
         </ul>
       </section>
@@ -46,26 +54,36 @@ export function AboutPage() {
             <h2 id="kpi-defs" className="mb-1 text-[15px] font-semibold text-ink">
               The five KPIs
             </h2>
-            <p className="mb-3 text-[13px] text-ink-2">Loaded from the kpi_definitions table; targets and thresholds live in kpi_targets.</p>
+            <p className="mb-3 text-[13px] text-ink-2">Loaded from the kpi_definitions table. Targets and the two warning thresholds (warning, critical) live in kpi_targets — see Targets &amp; thresholds.</p>
             <DataTable
               spec={{
                 caption: 'KPI definitions',
                 columns: [
                   { key: 'name', label: 'KPI' },
+                  { key: 'objective', label: 'Objective' },
                   { key: 'formula', label: 'Formula' },
-                  { key: 'dir', label: 'Better when' },
-                  { key: 'source', label: 'Source' },
+                  { key: 'action', label: 'Management action' },
                 ],
                 rows: m.data.kpis.map((k) => ({
                   name: (
-                    <span className="block max-w-xs whitespace-normal">
+                    <span className="block max-w-[12rem] whitespace-normal">
                       <strong className="text-ink">{k.name}</strong>
-                      <span className="mt-0.5 block text-xs text-ink-2">{k.description}</span>
+                      <span className="mt-0.5 block text-xs text-ink-2">
+                        {k.category} · {k.direction === 'higher_is_better' ? 'higher is better' : 'lower is better'}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-ink-muted">{k.data_source}</span>
                     </span>
                   ),
-                  formula: <span className="block max-w-xs whitespace-normal text-ink-2">{k.formula}</span>,
-                  dir: k.direction === 'higher_is_better' ? 'Higher' : 'Lower',
-                  source: <span className="block max-w-[14rem] whitespace-normal text-ink-2">{k.data_source}</span>,
+                  objective: <span className="block max-w-xs whitespace-normal text-ink-2">{k.objective}</span>,
+                  formula: <span className="block max-w-[14rem] whitespace-normal text-ink-2">{k.formula}</span>,
+                  action: (
+                    <span className="block max-w-sm whitespace-normal text-xs text-ink-2">
+                      <strong className="text-ink">Warning:</strong> {k.warning_action}
+                      <span className="mt-1 block">
+                        <strong className="text-ink">Critical:</strong> {k.critical_action}
+                      </span>
+                    </span>
+                  ),
                 })),
               }}
             />
@@ -137,31 +155,31 @@ export function AboutPage() {
               Who can see what
             </h2>
             <p className="mb-3 text-[13px] text-ink-2">
-              Enforced in PostgreSQL by Row-Level Security policies and role-checked functions — not just hidden in the interface.
+              One user type. Enforced in PostgreSQL by Row-Level Security policies and an authorization check in every analytics function — not
+              just hidden in the interface.
             </p>
             <DataTable
               spec={{
-                caption: 'Access control matrix',
+                caption: 'Access control',
                 columns: [
                   { key: 'what', label: 'Data' },
-                  { key: 'admin', label: 'Administrator' },
-                  { key: 'dean', label: 'Dean' },
-                  { key: 'chair', label: 'Chair' },
-                  { key: 'viewer', label: 'Viewer' },
+                  { key: 'admin', label: 'Authorized academic administrator' },
+                  { key: 'other', label: 'Any other signed-in account' },
+                  { key: 'anon', label: 'Signed out' },
                 ],
                 rows: [
-                  { what: 'Aggregate KPIs, trends, charts', admin: 'All colleges', dean: 'Own college', chair: 'Own department', viewer: 'All (aggregates)' },
-                  { what: 'Faculty-level SETE results', admin: 'All', dean: 'Own college', chair: 'Own department', viewer: no },
-                  { what: 'Student records & final grades (rows)', admin: 'All', dean: 'Own college', chair: 'Own department', viewer: no },
-                  { what: 'Raw anonymous SETE responses', admin: yes, dean: no, chair: no, viewer: no },
-                  { what: 'Read KPI targets & thresholds', admin: yes, dean: yes, chair: yes, viewer: yes },
-                  { what: 'Change targets, thresholds, settings', admin: yes, dean: no, chair: no, viewer: no },
-                  { what: 'Target change history (audit)', admin: yes, dean: no, chair: no, viewer: no },
+                  { what: 'KPIs, trends, charts, alerts', admin: yes, other: no, anon: no },
+                  { what: 'Faculty-level SETE results (pseudonymised)', admin: yes, other: no, anon: no },
+                  { what: 'Student records & final grades', admin: yes, other: no, anon: no },
+                  { what: 'Raw SETE forms (anonymous, no student ID)', admin: yes, other: no, anon: no },
+                  { what: 'Change targets, thresholds, settings', admin: yes, other: no, anon: no },
+                  { what: 'Target change history (audit trail)', admin: yes, other: no, anon: no },
                 ],
               }}
             />
             <p className="mt-3 text-xs text-ink-muted">
-              Anonymous (signed-out) requests receive nothing. SETE averages built from fewer responses than the reporting minimum are suppressed.
+              Accounts are provisioned (public sign-up is disabled) and get no access until an academic administrator profile is granted. SETE
+              averages built from fewer responses than the reporting minimum are suppressed so respondents cannot be identified.
             </p>
           </section>
         </div>

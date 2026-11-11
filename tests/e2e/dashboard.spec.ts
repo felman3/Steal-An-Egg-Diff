@@ -11,7 +11,7 @@ test.describe('authentication', () => {
 
   test('wrong password shows an error and stays on login', async ({ page }) => {
     await page.goto('/login');
-    await page.getByLabel('Email').fill('demo.viewer@example.com');
+    await page.getByLabel('Email').fill('demo.academic.admin@example.com');
     await page.getByLabel('Password', { exact: true }).fill('not-the-password');
     await page.getByTestId('login-submit').click();
     await expect(page.getByTestId('login-error')).toContainText('Incorrect email or password');
@@ -19,19 +19,24 @@ test.describe('authentication', () => {
   });
 
   test('sign out returns to login', async ({ page }) => {
-    await signInAs(page, 'viewer');
+    await signInAs(page, 'admin');
     await page.getByTestId('sign-out').first().click();
     await expect(page).toHaveURL(/\/login/);
   });
 });
 
-test.describe('dashboard (admin)', () => {
-  test('shows five database-backed KPIs, alerts and three charts', async ({ page }) => {
+test.describe('academic administrator dashboard', () => {
+  test('shows five database-backed KPI cards, alerts with actions and three charts', async ({ page }) => {
     await signInAs(page, 'admin');
     await waitForKpis(page);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Academic Administrator Dashboard');
     for (const code of ['sete_mean', 'sete_response_rate', 'pass_rate', 'mean_gwa', 'faculty_standard_rate']) {
       await expect(page.getByTestId(`kpi-${code}`)).toBeVisible();
     }
+    // KPIs cover both academic operations and teaching effectiveness (case study, Part II).
+    await expect(page.getByTestId('kpi-category-pass_rate')).toHaveText(/Academic operations/i);
+    await expect(page.getByTestId('kpi-category-sete_mean')).toHaveText(/Teaching effectiveness/i);
+    await expect(page.getByTestId('alert-action').first()).toContainText('Action:');
     await expect(page.getByTestId('alerts-panel')).toBeVisible();
     await expect(page.getByTestId('alert-count')).toContainText(/\d+ alerts? · \d+ critical/);
     await expect(page.getByTestId('trend-chart').locator('.recharts-line')).toBeVisible();
@@ -69,7 +74,7 @@ test.describe('dashboard (admin)', () => {
     await waitForKpis(page);
     // Data Science was established in 2024, so AY 2022-2023 has no records.
     await page.getByTestId('filter-ay').selectOption({ label: 'AY 2022-2023' });
-    await page.getByTestId('filter-college').selectOption({ label: 'CCIS · Computing and Information Sciences' });
+    await page.getByTestId('filter-college').selectOption({ label: 'CICS · Informatics and Computing Sciences' });
     await page.getByTestId('filter-department').selectOption({ label: 'DS · Data Science' });
     await expect(page.getByTestId('empty-state').first()).toContainText('No academic or SETE records');
   });
@@ -96,39 +101,31 @@ test.describe('dashboard (admin)', () => {
   });
 });
 
-test.describe('role-based authorization', () => {
-  test('viewer sees aggregates but faculty-level results are restricted', async ({ page }) => {
-    await signInAs(page, 'viewer');
-    await waitForKpis(page);
-    await page.goto('/faculty');
-    await expect(page.getByTestId('restricted-state')).toContainText('confidential');
-    await page.goto('/targets');
-    await expect(page.getByTestId('targets-readonly')).toBeVisible();
-    await expect(page.getByTestId('save-target')).toHaveCount(0);
-    await expect(page.getByTestId('audit-trail')).toContainText('administrators only');
-  });
+test('clicking a department bar drills the whole dashboard down to that department', async ({ page }) => {
+  await signInAs(page, 'admin');
+  await waitForKpis(page);
+  const before = await kpiValues(page);
+  await page.getByTestId('department-chart').locator('.recharts-bar-rectangle').first().click();
+  await expect(page).toHaveURL(/dept=\d+/);
+  await expect(page.getByTestId('scope-description')).not.toContainText('All colleges');
+  await expect.poll(async () => (await kpiValues(page)).pass_rate).not.toBe(before.pass_rate);
+  // Only the selected department remains on the chart's category axis.
+  await expect(page.getByTestId('department-chart').locator('.recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value')).toHaveCount(1);
+});
 
-  test('dean is locked to their college', async ({ page }) => {
-    await signInAs(page, 'dean');
-    await waitForKpis(page);
-    await expect(page.getByTestId('filter-college')).toBeDisabled();
-    await expect(page.getByTestId('filter-college')).toHaveValue(/\d+/);
-    await expect(page.getByTestId('scope-description')).toContainText('College of Computing and Information Sciences');
-    // A hand-edited URL for another college is ignored; the scope stays CCIS.
-    await page.goto('/?college=2');
-    await waitForKpis(page);
-    await expect(page.getByTestId('scope-description')).toContainText('College of Computing and Information Sciences');
-    await page.goto('/faculty');
-    await expect(page.getByTestId('faculty-table')).toBeVisible();
-  });
+test('faculty SETE results carry the responsible-use notice', async ({ page }) => {
+  await signInAs(page, 'admin');
+  await page.goto('/faculty');
+  await expect(page.getByTestId('responsible-use')).toContainText('must not be the sole basis');
+  await expect(page.getByTestId('faculty-table')).toBeVisible();
+});
 
-  test('department chair is locked to their department', async ({ page }) => {
-    await signInAs(page, 'chair');
-    await waitForKpis(page);
-    await expect(page.getByTestId('filter-department')).toBeDisabled();
-    await expect(page.getByTestId('scope-description')).toContainText('Mathematics');
-    await page.goto('/departments');
-    await expect(page.getByTestId('scorecard-row-MATH')).toBeVisible();
-    await expect(page.locator('[data-testid^="scorecard-row-"]')).toHaveCount(1);
+test.describe('access control (only authorized academic administrators)', () => {
+  test('an unauthorized account can sign in but is denied all data', async ({ page }) => {
+    await signInAs(page, 'unauthorized');
+    await expect(page.getByTestId('access-denied')).toContainText('authorized academic administrators');
+    await page.goto('/faculty');
+    await expect(page.getByTestId('access-denied')).toBeVisible();
+    await expect(page.getByTestId('faculty-table')).toHaveCount(0);
   });
 });

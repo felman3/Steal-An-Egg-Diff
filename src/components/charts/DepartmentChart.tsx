@@ -8,6 +8,8 @@ import { TooltipBox, TooltipRow } from './ChartTooltip';
 const BAR = 18;
 
 interface Datum {
+  id: number;
+  collegeId: number;
   code: string;
   name: string;
   college: string;
@@ -26,11 +28,22 @@ function TargetTick(props: { x?: number; y?: number; width?: number; height?: nu
   return <line x1={xe} x2={xe} y1={y - 4} y2={y + height + 4} stroke="var(--ink)" strokeWidth={2} strokeLinecap="round" />;
 }
 
-export function DepartmentChart({ rows, kpi }: { rows: DepartmentKpiRow[]; kpi: KpiSummaryRow }) {
+export function DepartmentChart({
+  rows,
+  kpi,
+  onSelectDepartment,
+}: {
+  rows: DepartmentKpiRow[];
+  kpi: KpiSummaryRow;
+  /** Drill-down: clicking a bar filters the whole dashboard to that department. */
+  onSelectDepartment?: (departmentId: number, collegeId: number) => void;
+}) {
   const better = kpi.direction === 'higher_is_better' ? -1 : 1;
   const data: Datum[] = rows
     .filter((r) => r.value !== null)
     .map((r) => ({
+      id: r.department_id,
+      collegeId: r.college_id,
       code: r.department_code,
       name: r.department_name.replace('Department of ', ''),
       college: r.college_code,
@@ -72,7 +85,16 @@ export function DepartmentChart({ rows, kpi }: { rows: DepartmentKpiRow[]; kpi: 
                 );
               }}
             />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false}>
+            <Bar
+              dataKey="value"
+              radius={[0, 4, 4, 0]}
+              isAnimationActive={false}
+              cursor={onSelectDepartment ? 'pointer' : undefined}
+              onClick={(entry) => {
+                const d = (entry as { payload?: Datum }).payload;
+                if (d && onSelectDepartment) onSelectDepartment(d.id, d.collegeId);
+              }}
+            >
               {data.map((d) => (
                 <Cell key={d.code} fill={STATUS_FILL[d.status]} />
               ))}
@@ -113,6 +135,7 @@ export function DepartmentChart({ rows, kpi }: { rows: DepartmentKpiRow[]; kpi: 
           <span aria-hidden className="inline-block h-3 w-0.5 rounded bg-ink" /> Target
         </li>
         {missing.length > 0 && <li className="text-ink-muted">No data: {missing.join(', ')}</li>}
+        {onSelectDepartment && data.length > 1 && <li className="text-ink-muted">Click a bar to drill down into that department</li>}
       </ul>
     </div>
   );

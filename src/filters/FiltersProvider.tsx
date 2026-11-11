@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { useAuth } from '../auth/AuthProvider';
 import { fetchReferenceData, type ReferenceData } from '../lib/api';
 import type { AppError } from '../lib/errors';
 import type { College, Department, Filters } from '../lib/types';
@@ -15,7 +14,6 @@ interface FiltersContextValue {
   filters: Filters;
   /** Stable string for cache keys. */
   filterKey: string;
-  locks: { college: boolean; department: boolean };
   collegeOptions: College[];
   departmentOptions: Department[];
   setFilters: (patch: Partial<Filters>) => void;
@@ -33,17 +31,13 @@ function parseParam(v: string | null): number | 'all' | undefined {
 }
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
-  const { profile } = useAuth();
   const [params, setParams] = useSearchParams();
   const ref = useQuery('reference', fetchReferenceData);
   const reference = ref.data;
 
-  const lockedCollegeId =
-    profile?.role === 'dean' ? (profile.college?.id ?? null) : profile?.role === 'chair' ? (profile.department?.college?.id ?? null) : null;
-  const lockedDepartmentId = profile?.role === 'chair' ? (profile.department?.id ?? null) : null;
 
   const filters = useMemo<Filters>(() => {
-    if (!reference) return { academicYearId: null, semesterId: null, collegeId: lockedCollegeId, departmentId: lockedDepartmentId };
+    if (!reference) return { academicYearId: null, semesterId: null, collegeId: null, departmentId: null };
     const latestAy = reference.academicYears[0]?.id ?? null;
 
     const ay = parseParam(params.get('ay'));
@@ -54,8 +48,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const semesterId = typeof sem === 'number' && reference.semesters.some((s) => s.id === sem) ? sem : null;
 
     const col = parseParam(params.get('college'));
-    let collegeId = typeof col === 'number' && reference.colleges.some((c) => c.id === col) ? col : null;
-    if (lockedCollegeId) collegeId = lockedCollegeId;
+    const collegeId = typeof col === 'number' && reference.colleges.some((c) => c.id === col) ? col : null;
 
     const dep = parseParam(params.get('dept'));
     let departmentId: number | null = null;
@@ -63,22 +56,16 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       const d = reference.departments.find((x) => x.id === dep);
       if (d && (collegeId === null || d.college_id === collegeId)) departmentId = d.id;
     }
-    if (lockedDepartmentId) departmentId = lockedDepartmentId;
 
     return { academicYearId, semesterId, collegeId, departmentId };
-  }, [reference, params, lockedCollegeId, lockedDepartmentId]);
+  }, [reference, params]);
 
-  const collegeOptions = useMemo(() => {
-    const all = reference?.colleges ?? [];
-    return lockedCollegeId ? all.filter((c) => c.id === lockedCollegeId) : all;
-  }, [reference, lockedCollegeId]);
+  const collegeOptions = useMemo(() => reference?.colleges ?? [], [reference]);
 
   const departmentOptions = useMemo(() => {
-    let all = reference?.departments ?? [];
-    if (lockedDepartmentId) return all.filter((d) => d.id === lockedDepartmentId);
-    if (filters.collegeId) all = all.filter((d) => d.college_id === filters.collegeId);
-    return all;
-  }, [reference, lockedDepartmentId, filters.collegeId]);
+    const all = reference?.departments ?? [];
+    return filters.collegeId ? all.filter((d) => d.college_id === filters.collegeId) : all;
+  }, [reference, filters.collegeId]);
 
   const setFilters = useCallback(
     (patch: Partial<Filters>) => {
@@ -132,7 +119,6 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     ready: Boolean(reference),
     filters,
     filterKey,
-    locks: { college: Boolean(lockedCollegeId), department: Boolean(lockedDepartmentId) },
     collegeOptions,
     departmentOptions,
     setFilters,

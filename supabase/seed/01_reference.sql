@@ -1,7 +1,8 @@
 -- =============================================================================
 -- SYNTHETIC DEMONSTRATION DATA (1/5): reference data, KPI targets, settings
 -- No real students, faculty, grades or evaluations are represented anywhere.
--- Organisation names are generic and not tied to any real university.
+-- College names mirror the case-study university's structure; every person,
+-- grade and evaluation is synthetic. Not an official university data source.
 -- =============================================================================
 
 -- Deterministic pseudo-random helpers used only while seeding (dropped in 05).
@@ -42,25 +43,25 @@ from public.academic_years ay
 cross join public.semesters s;
 
 insert into public.colleges (code, name) values
-  ('CCIS', 'College of Computing and Information Sciences'),
-  ('CENG', 'College of Engineering'),
+  ('CICS', 'College of Informatics and Computing Sciences'),
+  ('COE',  'College of Engineering'),
   ('CAS',  'College of Arts and Sciences'),
-  ('CTED', 'College of Teacher Education');
+  ('CTE',  'College of Teacher Education');
 
 insert into public.departments (college_id, code, name, established_year)
 select c.id, d.code, d.name, d.est
 from (values
-  ('CCIS', 'CS',   'Department of Computer Science',        2001),
-  ('CCIS', 'IT',   'Department of Information Technology',  2003),
-  ('CCIS', 'DS',   'Department of Data Science',            2024),
-  ('CENG', 'CE',   'Department of Civil Engineering',       1985),
-  ('CENG', 'EE',   'Department of Electrical Engineering',  1987),
-  ('CENG', 'ME',   'Department of Mechanical Engineering',  1990),
+  ('CICS', 'CS',   'Department of Computer Science',        2001),
+  ('CICS', 'IT',   'Department of Information Technology',  2003),
+  ('CICS', 'DS',   'Department of Data Science',            2024),
+  ('COE',  'CE',   'Department of Civil Engineering',       1985),
+  ('COE',  'EE',   'Department of Electrical Engineering',  1987),
+  ('COE',  'ME',   'Department of Mechanical Engineering',  1990),
   ('CAS',  'MATH', 'Department of Mathematics',             1978),
   ('CAS',  'PSY',  'Department of Psychology',              1995),
   ('CAS',  'COMM', 'Department of Communication',           1998),
-  ('CTED', 'ELED', 'Department of Elementary Education',    1975),
-  ('CTED', 'SEED', 'Department of Secondary Education',     1975)
+  ('CTE',  'ELED', 'Department of Elementary Education',    1975),
+  ('CTE',  'SEED', 'Department of Secondary Education',     1975)
 ) as d (college_code, code, name, est)
 join public.colleges c on c.code = d.college_code;
 
@@ -144,8 +145,8 @@ from (values
   ('pass_rate',             null,   93,   88,   83,   'Institution-wide standard'),
   ('mean_gwa',              null,   2.00, 2.20, 2.40, 'Institution-wide standard (lower is better)'),
   ('faculty_standard_rate', null,   90,   80,   70,   'Institution-wide standard'),
-  ('pass_rate',             'CENG', 88,   83,   78,   'Licensure-exam programs: differentiated target'),
-  ('mean_gwa',              'CENG', 2.20, 2.40, 2.60, 'Licensure-exam programs: differentiated target')
+  ('pass_rate',             'COE',  88,   83,   78,   'Licensure-exam programs: differentiated target'),
+  ('mean_gwa',              'COE',  2.20, 2.40, 2.60, 'Licensure-exam programs: differentiated target')
 ) as v (kpi, college, target, warning, critical, notes)
 join public.kpi_definitions k on k.code = v.kpi
 left join public.colleges c on c.code = v.college;

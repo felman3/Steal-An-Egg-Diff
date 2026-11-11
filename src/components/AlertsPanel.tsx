@@ -1,7 +1,7 @@
 import { CircleCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { formatValue, STATUS_LABEL, STATUS_RANK } from '../lib/format';
-import type { DepartmentKpiRow, KpiSummaryRow } from '../lib/types';
+import type { DepartmentKpiRow, KpiDefinition, KpiSummaryRow } from '../lib/types';
 import { StatusIcon } from './StatusBadge';
 
 interface Alert {
@@ -14,7 +14,21 @@ interface Alert {
 }
 
 /** Warning indicators: every KPI that crossed a stored alert threshold. */
-export function AlertsPanel({ summary, departments, scopeLabel }: { summary: KpiSummaryRow[]; departments: DepartmentKpiRow[]; scopeLabel: string }) {
+export function AlertsPanel({
+  summary,
+  departments,
+  scopeLabel,
+  definitions = [],
+}: {
+  summary: KpiSummaryRow[];
+  departments: DepartmentKpiRow[];
+  scopeLabel: string;
+  definitions?: KpiDefinition[];
+}) {
+  const actionFor = (code: string, status: 'warning' | 'critical') => {
+    const d = definitions.find((x) => x.code === code);
+    return status === 'critical' ? d?.critical_action : d?.warning_action;
+  };
   const location = useLocation();
   const byCode = new Map(summary.map((k) => [k.kpi_code, k]));
   const alerts: Alert[] = [];
@@ -39,7 +53,7 @@ export function AlertsPanel({ summary, departments, scopeLabel }: { summary: Kpi
   }
   alerts.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.scope.localeCompare(b.scope));
   const critical = alerts.filter((a) => a.status === 'critical').length;
-  const shown = alerts.slice(0, 6);
+  const shown = alerts.slice(0, 5);
 
   return (
     <section className="card flex flex-col p-4 sm:p-5" aria-labelledby="alerts-heading" data-testid="alerts-panel">
@@ -48,7 +62,7 @@ export function AlertsPanel({ summary, departments, scopeLabel }: { summary: Kpi
           <h2 id="alerts-heading" className="text-[15px] font-semibold text-ink">
             Alerts
           </h2>
-          <p className="mt-0.5 text-[13px] text-ink-2">KPIs past a stored warning or critical threshold</p>
+          <p className="mt-0.5 text-[13px] text-ink-2">KPIs past a stored threshold, with the recommended management action</p>
         </div>
         <span
           className="tabular shrink-0 whitespace-nowrap rounded-full bg-sunken px-2.5 py-1 text-xs font-semibold text-ink"
@@ -75,6 +89,11 @@ export function AlertsPanel({ summary, departments, scopeLabel }: { summary: Kpi
                   {a.kpi.short_name} <strong className="tabular text-ink">{formatValue(a.value, a.kpi.unit, a.kpi.decimals)}</strong> · {STATUS_LABEL[a.status]}{' '}
                   {a.kpi.direction === 'higher_is_better' ? 'below' : 'above'} {formatValue(a.threshold, a.kpi.unit, a.kpi.decimals)}
                 </p>
+                {actionFor(a.kpi.kpi_code, a.status) && (
+                  <p className="mt-1 text-xs leading-snug text-ink-2" data-testid="alert-action">
+                    <strong className="font-semibold text-ink">Action:</strong> {actionFor(a.kpi.kpi_code, a.status)}
+                  </p>
+                )}
               </div>
             </li>
           ))}

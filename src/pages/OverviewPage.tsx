@@ -9,13 +9,15 @@ import { KpiCard } from '../components/KpiCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { useFilters } from '../filters/FiltersProvider';
-import { fetchDepartmentKpis, fetchKpiSummary, fetchKpiTrend, fetchSeteCriteria } from '../lib/api';
+import { fetchDepartmentKpis, fetchKpiSummary, fetchKpiTrend, fetchMethodology, fetchSeteCriteria } from '../lib/api';
 import { formatInt, formatValue, STATUS_LABEL } from '../lib/format';
 import type { KpiCode } from '../lib/types';
 import { useQuery } from '../lib/useQuery';
 
 export function OverviewPage() {
-  const { filters, filterKey, describe, reference } = useFilters();
+  const { filters, filterKey, describe, reference, setFilters } = useFilters();
+  const methodology = useQuery('methodology', fetchMethodology);
+  const definitions = methodology.data?.kpis ?? [];
   const summary = useQuery(`summary|${filterKey}`, () => fetchKpiSummary(filters));
   const trend = useQuery(`trend|${filterKey}`, () => fetchKpiTrend(filters));
   const depts = useQuery(`depts|${filterKey}`, () => fetchDepartmentKpis(filters));
@@ -26,6 +28,14 @@ export function OverviewPage() {
   const kpis = summary.data ?? [];
   const focusKpi = kpis.find((k) => k.kpi_code === focus) ?? kpis[0];
   const noData = kpis.length > 0 && kpis.every((k) => k.sample_size === 0);
+
+  // Responsible SETE interpretation: a weak response rate makes SETE-based KPIs less representative.
+  const response = kpis.find((k) => k.kpi_code === 'sete_response_rate');
+  const lowResponse = response && (response.status === 'warning' || response.status === 'critical') && response.value !== null;
+  const cautionFor = (code: KpiCode) =>
+    lowResponse && (code === 'sete_mean' || code === 'faculty_standard_rate')
+      ? `Interpret with caution: only ${formatValue(response.value, response.unit, response.decimals)} of students responded to SETE.`
+      : null;
 
   const trendRows = (trend.data ?? []).filter((r) => r.kpi_code === focusKpi?.kpi_code);
   const trendValues = (code: KpiCode) =>
@@ -58,7 +68,7 @@ export function OverviewPage() {
 
   return (
     <>
-      <PageHeader title="Overview" />
+      <PageHeader title="Academic Administrator Dashboard" />
 
       {summary.error ? (
         <div className="card mb-5">
@@ -84,7 +94,15 @@ export function OverviewPage() {
       ) : (
         <section aria-label="Key performance indicators" className={`mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5 ${summary.isRefreshing ? 'refreshing' : ''}`} data-testid="kpi-grid">
           {kpis.map((k) => (
-            <KpiCard key={k.kpi_code} kpi={k} trend={trendValues(k.kpi_code)} selected={k.kpi_code === focusKpi?.kpi_code} onSelect={() => setFocus(k.kpi_code)} />
+            <KpiCard
+              key={k.kpi_code}
+              kpi={k}
+              def={definitions.find((d) => d.code === k.kpi_code)}
+              caution={cautionFor(k.kpi_code)}
+              trend={trendValues(k.kpi_code)}
+              selected={k.kpi_code === focusKpi?.kpi_code}
+              onSelect={() => setFocus(k.kpi_code)}
+            />
           ))}
         </section>
       )}
@@ -120,7 +138,7 @@ export function OverviewPage() {
               <TrendChart rows={trendRows} kpi={focusKpi} />
             </ChartCard>
             {depts.data && summary.data ? (
-              <AlertsPanel summary={summary.data} departments={depts.data} scopeLabel={describe.scope} />
+              <AlertsPanel summary={summary.data} departments={depts.data} scopeLabel={describe.scope} definitions={definitions} />
             ) : (
               <div className="card">{depts.error ? <ErrorState error={depts.error} onRetry={depts.refetch} /> : <LoadingState />}</div>
             )}
@@ -157,7 +175,11 @@ export function OverviewPage() {
                 })),
               }}
             >
-              <DepartmentChart rows={deptRows} kpi={focusKpi} />
+              <DepartmentChart
+                rows={deptRows}
+                kpi={focusKpi}
+                onSelectDepartment={(departmentId, collegeId) => setFilters({ collegeId, departmentId })}
+              />
             </ChartCard>
 
             <ChartCard
@@ -196,7 +218,8 @@ export function OverviewPage() {
 
           <p className="mt-5 text-xs text-ink-muted">
             Statuses: {(['on_target', 'below_target', 'warning', 'critical'] as const).map((s) => STATUS_LABEL[s]).join(' · ')} — computed in the
-            database from the stored target, warning and critical thresholds. Hover a KPI card for its definition and formula.
+            database from the stored target, warning and critical thresholds. Hover a KPI card for its objective and formula. SETE is one
+            source of evidence about teaching and is never, on its own, a basis for personnel decisions.
           </p>
         </>
       )}

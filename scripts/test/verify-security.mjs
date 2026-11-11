@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * End-to-end authorization test against a live Supabase project.
- * Signs in as each demo role through Supabase Auth and exercises the Data API
+ * Signs in as the academic administrator and as an unauthorized account through Supabase Auth and exercises the Data API
  * (PostgREST) exactly as the browser would, then asserts the access matrix.
  *
  *   VITE_SUPABASE_URL=https://<ref>.supabase.co \
@@ -89,113 +89,90 @@ async function loadIds(token) {
   check('anon cannot call KPI RPCs', !r.ok, `status ${r.status} ${r.code ?? ''}`);
   const h = await rpc('app_health', {});
   check('anon can call app_health', h.ok && h.body?.status === 'ok', `status ${h.status}`);
-  const bad = await signIn('demo.viewer@example.com', 'wrong-password-123');
+  const bad = await signIn('demo.academic.admin@example.com', 'wrong-password-123');
   check('wrong password is rejected', !bad.ok, bad.body?.error_code ?? bad.body?.msg ?? '');
 }
 
 // ---------------------------------------------------------------------------
-// 2. Signed-in roles
+// 2. The one authorized user type vs. an unauthorized signed-in account
 // ---------------------------------------------------------------------------
-const accounts = {
-  admin: 'demo.admin@example.com',
-  dean: 'demo.dean.ccis@example.com',
-  chair: 'demo.chair.math@example.com',
-  viewer: 'demo.viewer@example.com',
-};
+const accounts = { admin: 'demo.academic.admin@example.com', unauthorized: 'demo.unauthorized@example.com' };
 const tokens = {};
-for (const [role, email] of Object.entries(accounts)) {
+for (const [who, email] of Object.entries(accounts)) {
   const s = await signIn(email);
-  check(`${role} can sign in`, s.ok && !!s.token, s.ok ? email : JSON.stringify(s.body));
-  tokens[role] = s.token;
+  check(`${who} account can sign in (authentication)`, s.ok && !!s.token, s.ok ? email : JSON.stringify(s.body));
+  tokens[who] = s.token;
 }
 await loadIds(tokens.admin);
 
-const counts = {};
-for (const role of Object.keys(accounts)) {
-  counts[role] = {};
-  for (const t of ['colleges', 'faculty', 'students', 'class_sections', 'enrollments', 'sete_evaluations', 'sete_scores', 'user_profiles', 'kpi_targets', 'kpi_target_audit']) {
-    counts[role][t] = (await count(t, tokens[role])).n;
-  }
-}
-console.log('\nRows visible per role (RLS):');
+const tables = ['colleges', 'departments', 'terms', 'kpi_definitions', 'kpi_targets', 'faculty', 'students', 'class_sections',
+  'enrollments', 'sete_evaluations', 'sete_scores', 'user_profiles', 'kpi_target_audit'];
+const counts = { admin: {}, unauthorized: {} };
+for (const who of Object.keys(counts)) for (const t of tables) counts[who][t] = (await count(t, tokens[who])).n;
+console.log('\nRows visible (RLS):');
 console.table(counts);
 
 const A = counts.admin;
-check('all roles read reference data', ['admin', 'dean', 'chair', 'viewer'].every((r) => counts[r].colleges === A.colleges && A.colleges > 0), A.colleges);
-check('admin reads all faculty', A.faculty > 0, A.faculty);
-check('dean reads only a subset of faculty', counts.dean.faculty > 0 && counts.dean.faculty < A.faculty, counts.dean.faculty);
-check('chair reads fewer faculty than dean scope', counts.chair.faculty > 0 && counts.chair.faculty < A.faculty, counts.chair.faculty);
-check('viewer reads no faculty rows', counts.viewer.faculty === 0, counts.viewer.faculty);
-check('viewer reads no students/grades', counts.viewer.students === 0 && counts.viewer.enrollments === 0, `${counts.viewer.students}/${counts.viewer.enrollments}`);
-check('dean/chair grades are scoped', counts.dean.enrollments > 0 && counts.dean.enrollments < A.enrollments && counts.chair.enrollments > 0 && counts.chair.enrollments < A.enrollments, `${counts.dean.enrollments}/${counts.chair.enrollments} of ${A.enrollments}`);
-check('raw SETE responses: admin only', A.sete_evaluations > 0 && ['dean', 'chair', 'viewer'].every((r) => counts[r].sete_evaluations === 0 && counts[r].sete_scores === 0), A.sete_evaluations);
-check('non-admins see only their own profile', ['dean', 'chair', 'viewer'].every((r) => counts[r].user_profiles === 1) && A.user_profiles >= 4, A.user_profiles);
-check('audit trail: admin only', A.kpi_target_audit > 0 && ['dean', 'chair', 'viewer'].every((r) => counts[r].kpi_target_audit === 0), A.kpi_target_audit);
+check('academic admin reads every dashboard table', tables.filter((t) => t !== 'kpi_target_audit').every((t) => A[t] > 0), `${A.enrollments} grades, ${A.sete_evaluations} SETE forms`);
+check('unauthorized account reads 0 rows of every table', tables.every((t) => counts.unauthorized[t] === 0), JSON.stringify(counts.unauthorized));
 
-// Scoped KPI RPCs
-for (const role of Object.keys(accounts)) {
-  const r = await rpc('get_kpi_summary', {}, tokens[role]);
-  check(`${role} gets 5 KPIs for own scope`, r.ok && Array.isArray(r.body) && r.body.length === 5, r.ok ? r.body.map((k) => k.kpi_code).join(',') : r.code);
+const rpcs = ['get_kpi_summary', 'get_kpi_trend', 'get_department_kpis', 'get_sete_criteria', 'get_grade_distribution', 'get_faculty_performance'];
+for (const fn of rpcs) {
+  const a = await rpc(fn, {}, tokens.admin);
+  check(`academic admin can call ${fn}`, a.ok && Array.isArray(a.body) && a.body.length > 0, a.ok ? `${a.body.length} rows` : a.code);
+  const u = await rpc(fn, {}, tokens.unauthorized);
+  check(`unauthorized account is refused ${fn}`, !u.ok && u.code === '42501', `${u.status} ${u.code}`);
 }
-const ceng = { p_college_id: ids.CENG };
-check('admin can view another college', (await rpc('get_kpi_summary', ceng, tokens.admin)).ok);
-check('viewer can view aggregate KPIs of any college', (await rpc('get_kpi_summary', ceng, tokens.viewer)).ok);
 {
-  const r = await rpc('get_kpi_summary', ceng, tokens.dean);
-  check('dean is refused outside own college', !r.ok && r.code === '42501', `${r.status} ${r.code}`);
-  const r2 = await rpc('get_department_kpis', { p_department_id: ids['dept:CS'] }, tokens.chair);
-  check('chair is refused outside own department', !r2.ok && r2.code === '42501', `${r2.status} ${r2.code}`);
-  const r3 = await rpc('get_department_kpis', {}, tokens.chair);
-  check('chair department list is limited to MATH', r3.ok && r3.body.every((x) => x.department_code === 'MATH'), r3.ok ? [...new Set(r3.body.map((x) => x.department_code))].join(',') : r3.code);
-  const r4 = await rpc('get_department_kpis', {}, tokens.dean);
-  check('dean department list is limited to CCIS', r4.ok && r4.body.length > 0 && r4.body.every((x) => x.college_code === 'CCIS'), r4.ok ? [...new Set(r4.body.map((x) => x.department_code))].join(',') : r4.code);
+  const r = await rpc('get_kpi_summary', {}, tokens.admin);
+  check('KPI summary returns the five KPIs', r.ok && r.body.length === 5, r.body?.map((k) => k.kpi_code).join(','));
+  const f = await rpc('get_kpi_summary', { p_college_id: ids.COE, p_department_id: ids['dept:CE'] }, tokens.admin);
+  check('college + department filters are accepted', f.ok && f.body.length === 5, f.status);
+  const bad = await rpc('get_kpi_summary', { p_college_id: ids.CICS, p_department_id: ids['dept:CE'] }, tokens.admin);
+  check('inconsistent college/department filter is rejected', !bad.ok && bad.code === '22023', `${bad.status} ${bad.code}`);
+  const reset = await rpc('reset_kpi_targets', {}, tokens.unauthorized);
+  check('unauthorized account cannot restore targets', !reset.ok && reset.code === '42501', `${reset.status} ${reset.code}`);
 }
 
-// Confidential faculty-level results
+// KPI target writes
 {
-  const v = await rpc('get_faculty_performance', {}, tokens.viewer);
-  check('viewer is refused faculty-level SETE results', !v.ok && v.code === '42501', `${v.status} ${v.code}`);
-  const a = await rpc('get_faculty_performance', {}, tokens.admin);
-  check('admin gets faculty-level results', a.ok && a.body.length > 0, a.ok ? a.body.length : a.code);
-  const c = await rpc('get_faculty_performance', {}, tokens.chair);
-  check('chair gets only own-department faculty', c.ok && c.body.length > 0 && c.body.every((f) => f.department_code === 'MATH'), c.ok ? c.body.length : c.code);
-}
-
-// KPI target writes: admin only
-{
-  const res = await fetch(`${URL_}/rest/v1/kpi_targets?college_id=is.null&select=id,target_value,kpi_id&limit=1`, { headers: headers(tokens.admin) });
+  const res = await fetch(`${URL_}/rest/v1/kpi_targets?college_id=is.null&select=id,notes&limit=1`, { headers: headers(tokens.admin) });
   const [row] = await res.json();
-  const patch = (token, value) =>
+  const patch = (token, body) =>
     fetch(`${URL_}/rest/v1/kpi_targets?id=eq.${row.id}`, {
       method: 'PATCH',
       headers: { ...headers(token), Prefer: 'return=representation' },
-      body: JSON.stringify({ notes: value }),
-    }).then(async (r) => ({ status: r.status, rows: r.ok ? await r.json() : [] }));
-  const viewerTry = await patch(tokens.viewer, 'viewer tamper attempt');
-  check('viewer cannot modify KPI targets', viewerTry.rows.length === 0, `status ${viewerTry.status}, rows ${viewerTry.rows.length}`);
-  const deanTry = await patch(tokens.dean, 'dean tamper attempt');
-  check('dean cannot modify KPI targets', deanTry.rows.length === 0, `status ${deanTry.status}, rows ${deanTry.rows.length}`);
-  const adminTry = await patch(tokens.admin, 'Institution-wide standard');
-  check('admin can modify KPI targets', adminTry.rows.length === 1, `status ${adminTry.status}`);
-  const invalid = await fetch(`${URL_}/rest/v1/kpi_targets?id=eq.${row.id}`, {
-    method: 'PATCH', headers: headers(tokens.admin), body: JSON.stringify({ target_value: 999 }),
-  });
+      body: JSON.stringify(body),
+    }).then(async (r) => ({ ok: r.ok, status: r.status, rows: r.ok ? await r.json() : [] }));
+  const u = await patch(tokens.unauthorized, { notes: 'tamper attempt' });
+  check('unauthorized account cannot modify KPI targets', u.rows.length === 0, `status ${u.status}, rows ${u.rows.length}`);
+  const a = await patch(tokens.admin, { notes: row.notes });
+  check('academic admin can modify KPI targets', a.rows.length === 1, `status ${a.status}`);
+  const invalid = await patch(tokens.admin, { target_value: 999 });
   check('invalid target values are rejected by the database', !invalid.ok, `status ${invalid.status}`);
-  const ownRole = await fetch(`${URL_}/rest/v1/user_profiles?user_id=not.is.null`, {
-    method: 'PATCH', headers: { ...headers(tokens.viewer), Prefer: 'return=representation' }, body: JSON.stringify({ role: 'admin' }),
+  const audit = await count('kpi_target_audit', tokens.admin);
+  check('target changes are written to the audit trail (admin-readable)', audit.n > 0, audit.n);
+}
+
+// Nobody can grant themselves access
+{
+  const self = await fetch(`${URL_}/rest/v1/user_profiles`, {
+    method: 'POST',
+    headers: { ...headers(tokens.unauthorized), Prefer: 'return=representation' },
+    body: JSON.stringify({ user_id: JSON.parse(atob(tokens.unauthorized.split('.')[1])).sub, full_name: 'x', role: 'admin' }),
   });
-  check('users cannot escalate their own role', !ownRole.ok, `status ${ownRole.status}`);
+  check('unauthorized account cannot grant itself the admin profile', !self.ok, `status ${self.status}`);
 }
 
 // Shared demo credentials cannot be changed by visitors
 {
   const res = await fetch(`${URL_}/auth/v1/user`, {
     method: 'PUT',
-    headers: headers(tokens.viewer),
+    headers: headers(tokens.admin),
     body: JSON.stringify({ password: 'HijackedPassword#1', current_password: PW }),
   });
-  const again = await signIn(accounts.viewer);
-  const hijack = await signIn(accounts.viewer, 'HijackedPassword#1');
+  const again = await signIn(accounts.admin);
+  const hijack = await signIn(accounts.admin, 'HijackedPassword#1');
   check('demo password cannot be changed by a visitor', again.ok && !hijack.ok, `update status ${res.status}; original still works: ${again.ok}`);
 }
 

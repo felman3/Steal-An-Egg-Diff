@@ -181,7 +181,7 @@ comment on table public.enrollments is
   'Final grades on the 1.00 (highest) to 3.00 (passing) scale; 5.00 = failed; INC/DRP have no numeric grade.';
 
 -- ---------------------------------------------------------------------------
--- SETE: Student Evaluation of Teacher Effectiveness (anonymous)
+-- SETE: Student Evaluation of Teaching Effectiveness (anonymous)
 -- ---------------------------------------------------------------------------
 create table public.sete_criteria (
   id           smallint primary key,
