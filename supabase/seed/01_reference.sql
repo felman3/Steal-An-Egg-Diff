@@ -43,25 +43,30 @@ from public.academic_years ay
 cross join public.semesters s;
 
 insert into public.colleges (code, name) values
-  ('CICS', 'College of Informatics and Computing Sciences'),
-  ('COE',  'College of Engineering'),
-  ('CAS',  'College of Arts and Sciences'),
-  ('CTE',  'College of Teacher Education');
+  ('CICS',    'College of Informatics and Computing Sciences'),
+  ('CABEIHM', 'College of Accountancy, Business, Economics and International Hospitality Management'),
+  ('CTE',     'College of Teacher Education'),
+  ('CHS',     'College of Health Sciences'),
+  ('CCJE',    'College of Criminal Justice Education'),
+  ('CAS',     'College of Arts and Sciences');
 
 insert into public.departments (college_id, code, name, established_year)
 select c.id, d.code, d.name, d.est
 from (values
-  ('CICS', 'CS',   'Department of Computer Science',        2001),
-  ('CICS', 'IT',   'Department of Information Technology',  2003),
-  ('CICS', 'DS',   'Department of Data Science',            2024),
-  ('COE',  'CE',   'Department of Civil Engineering',       1985),
-  ('COE',  'EE',   'Department of Electrical Engineering',  1987),
-  ('COE',  'ME',   'Department of Mechanical Engineering',  1990),
-  ('CAS',  'MATH', 'Department of Mathematics',             1978),
-  ('CAS',  'PSY',  'Department of Psychology',              1995),
-  ('CAS',  'COMM', 'Department of Communication',           1998),
-  ('CTE',  'ELED', 'Department of Elementary Education',    1975),
-  ('CTE',  'SEED', 'Department of Secondary Education',     1975)
+  ('CICS',    'CS',   'Department of Computer Science',            2001),
+  ('CICS',    'IT',   'Department of Information Technology',      2003),
+  ('CABEIHM', 'ACC',  'Department of Accountancy',                 1985),
+  ('CABEIHM', 'BA',   'Department of Business Administration',     1985),
+  ('CABEIHM', 'HM',   'Department of Hospitality Management',      2005),
+  ('CABEIHM', 'TM',   'Department of Tourism Management',          2008),
+  ('CTE',     'ELED', 'Department of Elementary Education',        1975),
+  ('CTE',     'SEED', 'Department of Secondary Education',         1975),
+  ('CHS',     'NUR',  'Department of Nursing',                     2004),
+  ('CHS',     'ND',   'Department of Nutrition and Dietetics',     2024),
+  ('CCJE',    'CRIM', 'Department of Criminology',                 1998),
+  ('CAS',     'MATH', 'Department of Mathematics',                 1978),
+  ('CAS',     'PSY',  'Department of Psychology',                  1995),
+  ('CAS',     'COMM', 'Department of Communication',               1998)
 ) as d (college_code, code, name, est)
 join public.colleges c on c.code = d.college_code;
 
@@ -70,15 +75,18 @@ select d.id, p.code, p.name
 from (values
   ('CS',   'BSCS',    'Bachelor of Science in Computer Science'),
   ('IT',   'BSIT',    'Bachelor of Science in Information Technology'),
-  ('DS',   'BSDS',    'Bachelor of Science in Data Science'),
-  ('CE',   'BSCE',    'Bachelor of Science in Civil Engineering'),
-  ('EE',   'BSEE',    'Bachelor of Science in Electrical Engineering'),
-  ('ME',   'BSME',    'Bachelor of Science in Mechanical Engineering'),
+  ('ACC',  'BSA',     'Bachelor of Science in Accountancy'),
+  ('BA',   'BSBA',    'Bachelor of Science in Business Administration'),
+  ('HM',   'BSHM',    'Bachelor of Science in Hospitality Management'),
+  ('TM',   'BSTM',    'Bachelor of Science in Tourism Management'),
+  ('ELED', 'BEEd',    'Bachelor of Elementary Education'),
+  ('SEED', 'BSEd',    'Bachelor of Secondary Education'),
+  ('NUR',  'BSN',     'Bachelor of Science in Nursing'),
+  ('ND',   'BSND',    'Bachelor of Science in Nutrition and Dietetics'),
+  ('CRIM', 'BSCrim',  'Bachelor of Science in Criminology'),
   ('MATH', 'BSMath',  'Bachelor of Science in Mathematics'),
   ('PSY',  'BSPsych', 'Bachelor of Science in Psychology'),
-  ('COMM', 'BAComm',  'Bachelor of Arts in Communication'),
-  ('ELED', 'BEEd',    'Bachelor of Elementary Education'),
-  ('SEED', 'BSEd',    'Bachelor of Secondary Education')
+  ('COMM', 'BAComm',  'Bachelor of Arts in Communication')
 ) as p (dept, code, name)
 join public.departments d on d.code = p.dept;
 
@@ -145,8 +153,8 @@ from (values
   ('pass_rate',             null,   93,   88,   83,   'Institution-wide standard'),
   ('mean_gwa',              null,   2.00, 2.20, 2.40, 'Institution-wide standard (lower is better)'),
   ('faculty_standard_rate', null,   90,   80,   70,   'Institution-wide standard'),
-  ('pass_rate',             'COE',  88,   83,   78,   'Licensure-exam programs: differentiated target'),
-  ('mean_gwa',              'COE',  2.20, 2.40, 2.60, 'Licensure-exam programs: differentiated target')
+  ('pass_rate',             'CHS',  88,   83,   78,   'Licensure-exam programs: differentiated target'),
+  ('mean_gwa',              'CHS',  2.20, 2.40, 2.60, 'Licensure-exam programs: differentiated target')
 ) as v (kpi, college, target, warning, critical, notes)
 join public.kpi_definitions k on k.code = v.kpi
 left join public.colleges c on c.code = v.college;

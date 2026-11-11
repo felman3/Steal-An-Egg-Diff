@@ -3,13 +3,15 @@ import { AlertsPanel } from '../components/AlertsPanel';
 import { PageHeader } from '../components/AppShell';
 import { ChartCard } from '../components/ChartCard';
 import { CriteriaChart } from '../components/charts/CriteriaChart';
+import { RatingDonut } from '../components/charts/RatingDonut';
+import { countRatingBands } from '../components/charts/ratingBands';
 import { DepartmentChart } from '../components/charts/DepartmentChart';
 import { TrendChart } from '../components/charts/TrendChart';
 import { KpiCard } from '../components/KpiCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { useFilters } from '../filters/FiltersProvider';
-import { fetchDepartmentKpis, fetchKpiSummary, fetchKpiTrend, fetchMethodology, fetchSeteCriteria } from '../lib/api';
+import { fetchDepartmentKpis, fetchFacultyPerformance, fetchKpiSummary, fetchKpiTrend, fetchMethodology, fetchSeteCriteria } from '../lib/api';
 import { formatInt, formatValue, STATUS_LABEL } from '../lib/format';
 import type { KpiCode } from '../lib/types';
 import { useQuery } from '../lib/useQuery';
@@ -22,6 +24,8 @@ export function OverviewPage() {
   const trend = useQuery(`trend|${filterKey}`, () => fetchKpiTrend(filters));
   const depts = useQuery(`depts|${filterKey}`, () => fetchDepartmentKpis(filters));
   const criteria = useQuery(`criteria|${filterKey}`, () => fetchSeteCriteria(filters));
+  const faculty = useQuery(`faculty|${filterKey}`, () => fetchFacultyPerformance(filters));
+  const ratingBands = countRatingBands(faculty.data ?? []);
   const [focus, setFocus] = useState<KpiCode>('sete_mean');
   const measureId = useId();
 
@@ -93,8 +97,9 @@ export function OverviewPage() {
         </div>
       ) : (
         <section aria-label="Key performance indicators" className={`mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5 ${summary.isRefreshing ? 'refreshing' : ''}`} data-testid="kpi-grid">
-          {kpis.map((k) => (
+          {kpis.map((k, i) => (
             <KpiCard
+              tooltipAlign={i >= 3 ? 'right' : 'left'}
               key={k.kpi_code}
               kpi={k}
               def={definitions.find((d) => d.code === k.kpi_code)}
@@ -144,8 +149,9 @@ export function OverviewPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-12">
             <ChartCard
+              className="lg:col-span-2 xl:col-span-5"
               testId="card-departments"
               title={`${focusKpi.kpi_name} by department`}
               subtitle={`${describe.period} · ${focusKpi.direction === 'lower_is_better' ? 'lower is better' : 'higher is better'} · bars coloured by status against each department's own target`}
@@ -183,6 +189,7 @@ export function OverviewPage() {
             </ChartCard>
 
             <ChartCard
+              className="xl:col-span-4"
               testId="card-criteria"
               title="SETE criteria breakdown"
               subtitle={
@@ -213,6 +220,30 @@ export function OverviewPage() {
               }}
             >
               <CriteriaChart rows={criteria.data ?? []} scopeLabel={scopeShort} compare={compareCriteria} />
+            </ChartCard>
+
+            <ChartCard
+              className="xl:col-span-3"
+              testId="card-rating-donut"
+              title="Faculty by SETE rating"
+              subtitle={`Descriptive rating of each evaluated faculty member · ${describe.scope} · ${describe.period}`}
+              isLoading={faculty.isLoading}
+              isRefreshing={faculty.isRefreshing}
+              error={faculty.error}
+              onRetry={faculty.refetch}
+              isEmpty={ratingBands.rated === 0}
+              emptyMessage="No faculty have enough SETE responses to be rated for this selection."
+              table={{
+                caption: 'Faculty by SETE descriptive rating',
+                columns: [
+                  { key: 'band', label: 'Rating' },
+                  { key: 'n', label: 'Faculty', align: 'right' },
+                  { key: 'pct', label: 'Share', align: 'right' },
+                ],
+                rows: ratingBands.bands.map((b) => ({ band: b.label, n: formatInt(b.count), pct: `${b.pct.toFixed(1)}%` })),
+              }}
+            >
+              <RatingDonut rows={faculty.data ?? []} />
             </ChartCard>
           </div>
 

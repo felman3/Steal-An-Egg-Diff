@@ -41,7 +41,12 @@ test.describe('academic administrator dashboard', () => {
     await expect(page.getByTestId('alert-count')).toContainText(/\d+ alerts? · \d+ critical/);
     await expect(page.getByTestId('trend-chart').locator('.recharts-line')).toBeVisible();
     await expect(page.getByTestId('department-chart').locator('.recharts-bar-rectangle').first()).toBeVisible();
-    await expect(page.getByTestId('criteria-chart').locator('.recharts-bar-rectangle').first()).toBeVisible();
+    await expect(page.getByTestId('criteria-chart').locator('.recharts-radar-polygon').first()).toBeVisible();
+    await expect(page.getByTestId('rating-donut').locator('.recharts-pie-sector').first()).toBeVisible();
+    // Hovering a KPI card shows the styled (white) definition card, not a native tooltip.
+    await page.getByTestId('kpi-pass_rate').hover();
+    await expect(page.getByTestId('kpi-tooltip-pass_rate')).toBeVisible();
+    await expect(page.getByTestId('kpi-tooltip-pass_rate')).toContainText('Formula');
   });
 
   test('academic year, semester, college and department filters change the results', async ({ page }) => {
@@ -61,7 +66,7 @@ test.describe('academic administrator dashboard', () => {
     await page.getByTestId('filter-college').selectOption({ label: 'CAS · Arts and Sciences' });
     await expect(page.getByTestId('scope-description')).toContainText('College of Arts and Sciences');
     // Department options are narrowed to the selected college.
-    await expect(page.getByTestId('filter-department').locator('option')).toHaveText(['All departments in college', 'COMM · Communication', 'MATH · Mathematics', 'PSY · Psychology']);
+    await expect(page.getByTestId('filter-department').locator('option')).toHaveText(['All', 'COMM · Communication', 'MATH · Mathematics', 'PSY · Psychology']);
 
     await page.getByTestId('filter-department').selectOption({ label: 'MATH · Mathematics' });
     await expect(page.getByTestId('scope-description')).toContainText('Mathematics');
@@ -72,10 +77,10 @@ test.describe('academic administrator dashboard', () => {
   test('a scope with no records shows an empty state', async ({ page }) => {
     await signInAs(page, 'admin');
     await waitForKpis(page);
-    // Data Science was established in 2024, so AY 2022-2023 has no records.
+    // Nutrition and Dietetics was established in 2024, so AY 2022-2023 has no records.
     await page.getByTestId('filter-ay').selectOption({ label: 'AY 2022-2023' });
-    await page.getByTestId('filter-college').selectOption({ label: 'CICS · Informatics and Computing Sciences' });
-    await page.getByTestId('filter-department').selectOption({ label: 'DS · Data Science' });
+    await page.getByTestId('filter-college').selectOption({ label: 'CHS · Health Sciences' });
+    await page.getByTestId('filter-department').selectOption({ label: 'ND · Nutrition and Dietetics' });
     await expect(page.getByTestId('empty-state').first()).toContainText('No academic or SETE records');
   });
 

@@ -5,7 +5,10 @@
  *
  *   SUPABASE_ACCESS_TOKEN=<personal access token> \
  *   SUPABASE_PROJECT_REF=<project ref> \
- *   node scripts/db/apply.mjs [--seed] [--only-seed]
+ *   node scripts/db/apply.mjs [--seed] [--only-seed] [--reset-seed]
+ *
+ * --reset-seed empties all synthetic data (supabase/reset_synthetic_data.sql)
+ * and loads the seed again; re-run create-demo-users.mjs afterwards.
  *
  * Migrations already recorded in supabase_migrations.schema_migrations are
  * skipped, so the history stays compatible with `supabase db push`.
@@ -92,11 +95,15 @@ async function applySeed() {
 }
 
 try {
-  if (!args.has('--only-seed')) {
+  if (!args.has('--only-seed') && !args.has('--reset-seed')) {
     console.log('Applying migrations…');
     await applyMigrations();
   }
-  if (args.has('--seed') || args.has('--only-seed')) {
+  if (args.has('--reset-seed')) {
+    console.log('Removing existing synthetic data…');
+    await runSql(readFileSync(join(root, 'supabase', 'reset_synthetic_data.sql'), 'utf8'), 'reset synthetic data');
+  }
+  if (args.has('--seed') || args.has('--only-seed') || args.has('--reset-seed')) {
     console.log('Loading synthetic seed data…');
     await applySeed();
   }

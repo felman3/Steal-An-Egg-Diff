@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatInt } from '../../lib/format';
 import type { CriterionRow } from '../../lib/types';
 import { CRITERION_SHORT } from './chartUtils';
@@ -12,16 +12,6 @@ interface Datum {
   n: number;
 }
 
-const valueLabel = (p: unknown) => {
-  const { x = 0, y = 0, width = 0, height = 0, value } = p as { x?: number; y?: number; width?: number; height?: number; value?: number | null };
-  if (value === null || value === undefined) return null;
-  return (
-    <text x={Number(x) + Number(width) + 6} y={Number(y) + Number(height) / 2} dominantBaseline="central" fontSize={12} fontWeight={600} fill="var(--ink)">
-      {Number(value).toFixed(2)}
-    </text>
-  );
-};
-
 export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRow[]; scopeLabel: string; compare: boolean }) {
   const data: Datum[] = rows.map((r) => ({
     label: `${r.criterion_code}. ${CRITERION_SHORT[r.criterion_code] ?? r.criterion_name}`,
@@ -33,18 +23,42 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
   const rated = data.filter((d) => d.scope !== null).sort((a, b) => (a.scope as number) - (b.scope as number));
   const weakest = rated[0];
   const strongest = rated[rated.length - 1];
+  // Ratings cluster between 3.5 and 4.6, so the radial axis starts at 3.0 to make differences visible (labelled below the chart).
+  const allValues = data.flatMap((d) => [d.scope, d.institution]).filter((v): v is number => v !== null);
+  const floor = allValues.length && Math.min(...allValues) < 3.1 ? 1 : 3;
   const summary = `Mean SETE score by criterion for ${scopeLabel}: ${data.map((d) => `${d.full} ${d.scope?.toFixed(2) ?? 'suppressed'}`).join('; ')}.`;
 
   return (
     <div data-testid="criteria-chart" className="flex flex-1 flex-col">
-      <div role="img" aria-label={summary} className="relative flex-1" style={{ minHeight: compare ? 250 : 210 }}>
+      <div role="img" aria-label={summary} className="relative flex-1" style={{ minHeight: 280 }}>
         <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 44, bottom: 4, left: 4 }} barGap={2} barCategoryGap="22%">
-            <CartesianGrid horizontal={false} />
-            <XAxis type="number" domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tickLine={false} axisLine={{ stroke: 'var(--axis)' }} tick={{ fontSize: 12 }} />
-            <YAxis type="category" dataKey="label" width={150} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+          <RadarChart data={data} outerRadius="78%" margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
+            <PolarGrid stroke="var(--grid)" />
+            <PolarAngleAxis dataKey="label" tick={{ fontSize: 12, fill: 'var(--ink-2)' }} />
+            <PolarRadiusAxis domain={[floor, 5]} tickCount={floor === 3 ? 5 : 5} angle={90} tick={{ fontSize: 10, fill: 'var(--axis-ink)' }} axisLine={false} />
+            {compare && (
+              <Radar
+                name="Institution"
+                dataKey="institution"
+                stroke="var(--series-muted)"
+                strokeDasharray="4 3"
+                strokeWidth={1.5}
+                fill="var(--series-muted)"
+                fillOpacity={0.12}
+                isAnimationActive={false}
+              />
+            )}
+            <Radar
+              name={scopeLabel}
+              dataKey="scope"
+              stroke="var(--series-1)"
+              strokeWidth={2}
+              fill="var(--series-1)"
+              fillOpacity={0.22}
+              dot={{ r: 3.5, fill: 'var(--series-1)', stroke: 'var(--surface)', strokeWidth: 1.5 }}
+              isAnimationActive={false}
+            />
             <Tooltip
-              cursor={{ fill: 'var(--wash-1)' }}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload as Datum;
@@ -57,18 +71,11 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
                 );
               }}
             />
-            <Bar dataKey="scope" name={scopeLabel} fill="var(--series-1)" barSize={14} radius={[0, 4, 4, 0]} isAnimationActive={false}>
-              <LabelList dataKey="scope" content={valueLabel} />
-            </Bar>
-            {compare && (
-              <Bar dataKey="institution" name="Institution" fill="var(--series-muted)" barSize={14} radius={[0, 4, 4, 0]} isAnimationActive={false}>
-                <LabelList dataKey="institution" content={valueLabel} />
-              </Bar>
-            )}
-          </BarChart>
+          </RadarChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-2">
+        {floor === 3 && <span className="order-last w-full text-ink-muted">Radial axis starts at 3.0 so differences between criteria are visible.</span>}
         {compare ? (
           <ul className="flex items-center gap-4" aria-label="Legend">
             <li className="flex items-center gap-1.5">

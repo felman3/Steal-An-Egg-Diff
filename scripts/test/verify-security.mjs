@@ -126,9 +126,9 @@ for (const fn of rpcs) {
 {
   const r = await rpc('get_kpi_summary', {}, tokens.admin);
   check('KPI summary returns the five KPIs', r.ok && r.body.length === 5, r.body?.map((k) => k.kpi_code).join(','));
-  const f = await rpc('get_kpi_summary', { p_college_id: ids.COE, p_department_id: ids['dept:CE'] }, tokens.admin);
+  const f = await rpc('get_kpi_summary', { p_college_id: ids.CHS, p_department_id: ids['dept:NUR'] }, tokens.admin);
   check('college + department filters are accepted', f.ok && f.body.length === 5, f.status);
-  const bad = await rpc('get_kpi_summary', { p_college_id: ids.CICS, p_department_id: ids['dept:CE'] }, tokens.admin);
+  const bad = await rpc('get_kpi_summary', { p_college_id: ids.CICS, p_department_id: ids['dept:NUR'] }, tokens.admin);
   check('inconsistent college/department filter is rejected', !bad.ok && bad.code === '22023', `${bad.status} ${bad.code}`);
   const reset = await rpc('reset_kpi_targets', {}, tokens.unauthorized);
   check('unauthorized account cannot restore targets', !reset.ok && reset.code === '42501', `${reset.status} ${reset.code}`);

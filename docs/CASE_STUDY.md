@@ -81,23 +81,23 @@ much SETE results can be trusted). All targets are **stored in the database** (`
 |---|---|---|---|---|
 | **1. Mean SETE Rating** *(teaching effectiveness)* | Monitor overall quality of instruction as perceived by students | Σ criterion scores ÷ number of criterion scores (1–5 scale) | **≥ 4.30** | *Warning:* chair reviews the criteria breakdown with the faculty and plans targeted development. *Critical:* dean-led instructional review combining SETE with peer observation, course outcomes and response rate |
 | **2. SETE Response Rate** *(teaching effectiveness / data quality)* | Make SETE results representative enough to interpret | evaluations submitted ÷ eligible enrolments (dropped excluded) × 100 | **≥ 90%** | *Warning:* portal reminders, longer evaluation window, class time for evaluation; mark results low-confidence. *Critical:* treat SETE results as inconclusive for the term |
-| **3. Course Pass Rate** *(academic operations)* | Monitor student success in enrolled courses | passing final grades (1.00–3.00) ÷ eligible enrolments × 100 | **≥ 93%** (College of Engineering **≥ 88%**) | *Warning:* review assessments and grade distribution; tutorial/remedial sessions; early advising. *Critical:* program review and intervention plan for at-risk students |
-| **4. Mean General Weighted Average** *(academic operations)* | Track overall academic achievement (1.00 is best) | Σ(final grade × units) ÷ Σ units, graded enrolments | **≤ 2.00** (College of Engineering **≤ 2.20**) | *Warning:* review grading consistency and student support. *Critical:* program-level learning-support and readiness review |
+| **3. Course Pass Rate** *(academic operations)* | Monitor student success in enrolled courses | passing final grades (1.00–3.00) ÷ eligible enrolments × 100 | **≥ 93%** (College of Health Sciences **≥ 88%**) | *Warning:* review assessments and grade distribution; tutorial/remedial sessions; early advising. *Critical:* program review and intervention plan for at-risk students |
+| **4. Mean General Weighted Average** *(academic operations)* | Track overall academic achievement (1.00 is best) | Σ(final grade × units) ÷ Σ units, graded enrolments | **≤ 2.00** (College of Health Sciences **≤ 2.20**) | *Warning:* review grading consistency and student support. *Critical:* program-level learning-support and readiness review |
 | **5. Faculty Meeting SETE Standard** *(teaching effectiveness)* | Share of faculty meeting the institutional teaching standard, for development planning | faculty with mean rating ≥ 4.00 ÷ faculty with ≥ 5 responses × 100 | **≥ 90%** | *Warning:* faculty-development program on the weakest criterion; mentoring pairs. *Critical:* college-wide teaching-improvement plan using SETE plus peer observation and portfolios |
 
 ### Relevance to university objectives
 - **Mean SETE rating** and **faculty meeting standard** support the objective of **quality instruction** and guide faculty development.
 - **Response rate** protects the **validity** of SETE: decisions should not rest on results from a few students.
 - **Pass rate** and **GWA** reflect **student success and academic excellence**, and differentiated targets acknowledge that licensure
-  programs (Engineering) are harder.
+  programs (e.g. Nursing in the College of Health Sciences) are harder.
 
 ### Warning thresholds (two levels per KPI, stored in `kpi_targets`)
 | KPI | Warning (intervene) | Critical (escalate) |
 |---|---|---|
 | Mean SETE rating | below **4.10** | below **3.90** |
 | SETE response rate | below **80%** | below **70%** |
-| Course pass rate | below **88%** (COE 83%) | below **83%** (COE 78%) |
-| Mean GWA | above **2.20** (COE 2.40) | above **2.40** (COE 2.60) |
+| Course pass rate | below **88%** (CHS 83%) | below **83%** (CHS 78%) |
+| Mean GWA | above **2.20** (CHS 2.40) | above **2.40** (CHS 2.60) |
 | Faculty meeting standard | below **80%** | below **70%** |
 
 Status ladder computed in the database: **On target → Below target (no alert) → Warning → Critical**.
@@ -125,13 +125,14 @@ Status ladder computed in the database: **On target → Below target (no alert) 
 ### Labeled components
 | # | Component | Type | Explanation |
 |---|---|---|---|
-| ① | **Header band with filters** — Academic year · Semester · College · Department (each with an icon) · Reset | **Interactive feature 1** | Every card, chart and alert recomputes in the database for the selection. Department options narrow to the chosen college. Filters are kept in the URL, so a view can be bookmarked or shared |
-| ② | **Five KPI cards** | KPI cards | Value, status badge, change vs. the previous comparable period, target, sample size (n), sparkline; category label (Academic operations / Teaching effectiveness); hover shows objective and formula; SETE cards show a caution note when the response rate is low |
+| ① | **Header with filter chips** — Academic year · Semester · College · Department (icon, label, current value) | **Interactive feature 1** | Every card, chart and alert recomputes in the database for the selection. Department options narrow to the chosen college. Filters are kept in the URL, so a view can be bookmarked or shared |
+| ② | **Five KPI cards** | KPI cards | Value, status badge, change vs. the previous comparable period, target, sample size (n), sparkline; category label (Academic operations / Teaching effectiveness); hovering shows a card with the objective, formula, target and thresholds; SETE cards show a caution note when the response rate is low |
 | ③ | **Alerts panel** | **Warning / alert mechanism** | Shows the three most severe KPIs (overall and per department) past their stored warning or critical threshold, **with the recommended management action**, and links to the full list |
-| ④ | **KPI trend by term** | Visualization 1 — line chart | The chosen KPI across all semesters, with dashed target line, shaded warning (amber) and critical (red) zones, and the selected period highlighted. *Best for SETE results across semesters* |
+| ④ | **KPI trend by term** | Visualization 1 — line chart with area fill | The chosen KPI across all semesters, with dashed target line, shaded warning (amber) and critical (red) zones, and the selected period highlighted. *Best for SETE results across semesters* |
 | ⑤ | **KPI by department** | Visualization 2 — horizontal bar chart | Departments sorted best→worst, bars colored by status, each with its own target tick. **Interactive feature 2: click a bar to drill the whole dashboard down to that department** |
-| ⑥ | **SETE criteria breakdown** | Visualization 3 — grouped bar chart | Mean score for each SETE criterion for the selection vs. the institution benchmark, with a **Development focus** (lowest-rated criterion) and **Strength** summary. *Best for SETE results across evaluation dimensions* |
-| — | Collapsible sidebar | Navigation | Navigation to the supporting pages; collapses to icons to give the dashboard more room |
+| ⑥ | **SETE criteria breakdown** | Visualization 3 — radar chart | Mean score for each SETE criterion for the selection vs. the institution benchmark, with a **Development focus** (lowest-rated criterion) and **Strength** summary. *Best for SETE results across evaluation dimensions* |
+| ⑦ | **Faculty by SETE rating** | Visualization 4 — donut chart | Share of evaluated faculty in each descriptive rating band (Outstanding … Needs Improvement), with the count at standard |
+| — | Collapsible sidebar | Navigation | Navigation to the supporting pages; the ☰ icon at the top collapses it to icons |
 | — | Measure selector / clicking a KPI card | Interaction | Switches charts ④ and ⑤ to that KPI |
 | — | Chart / Table toggle on every chart | Accessibility | Exact numbers, usable with a screen reader |
 | — | Colour coding | Design | One blue palette: dark blue = on target, light blue = below target; amber and red only for warning and critical |
@@ -144,8 +145,7 @@ watchlist with the responsible-use notice), **Targets & thresholds** (edit targe
 - **What appears first?** The five KPI cards with their status, directly under the filters, then the alerts. The administrator sees
   "how are we doing, and where is the problem" before any detail.
 - **Best visualization for SETE results?** Across **semesters**, a **line chart** with the target and threshold bands (④). Across
-  **evaluation dimensions**, **horizontal bars** on a fixed 1–5 scale compared with the institution benchmark (⑥). Pie and radar charts
-  were avoided because exact values are hard to compare.
+  **evaluation dimensions**, a **radar chart** comparing the selection with the institution benchmark (⑥); exact values are in its table view.
 - **Filtering:** the filter bar (①) for academic year, semester, college and department, plus drill-down by clicking a department bar (⑤).
 - **Identifying concerns and improvement opportunities:** statuses and the alerts panel show *where* (department) and *what* (KPI);
   the criteria chart shows *which teaching dimension* to develop; the faculty watchlist lists faculty below threshold, for development

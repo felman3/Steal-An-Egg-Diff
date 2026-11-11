@@ -47,8 +47,8 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `colleges` | `id`, `code` (unique, `^[A-Z]{2,8}$`), `name` (unique) | 4 colleges named after the case-study structure: CICS, COE, CAS, CTE |
-| `departments` | `id`, `college_id` → colleges, `code` (unique), `name`, `established_year` | unique (college, name); 11 departments. Data Science was established in 2024, which demonstrates empty states |
+| `colleges` | `id`, `code` (unique, `^[A-Z]{2,8}$`), `name` (unique) | 6 colleges following the case-study structure: CICS, CABEIHM, CTE, CHS, CCJE, CAS |
+| `departments` | `id`, `college_id` → colleges, `code` (unique), `name`, `established_year` | unique (college, name); 14 departments. Nutrition and Dietetics was established in 2024, which demonstrates empty states |
 | `programs` | `id`, `department_id` → departments, `code` (unique), `name` | One degree program per department |
 | `academic_years` | `id`, `start_year` (unique), `label` (unique, must equal `YYYY-YYYY+1`), `start_date`, `end_date` | AY 2022-2023 … 2025-2026 |
 | `semesters` | `id`, `code`, `name`, `sort_order` (all unique) | 1st / 2nd Semester |
@@ -138,15 +138,15 @@ produces identical data.
 
 | Entity | Rows |
 |---|---|
-| Colleges / departments / programs | 4 / 11 / 11 |
+| Colleges / departments / programs | 6 / 14 / 14 |
 | Academic years / terms | 4 / 8 |
-| Courses | 440 |
-| Faculty / students | 113 / 3,670 |
-| Class sections | 2,270 |
-| Enrolments (final grades) | 76,450 |
-| SETE evaluation forms / criterion scores | 62,450 / 249,800 |
+| Courses | 560 |
+| Faculty / students | 145 / 5,149 |
+| Class sections | 3,230 |
+| Enrolments (final grades) | 107,840 |
+| SETE evaluation forms / criterion scores | 88,512 / 354,048 |
 
 Each department has its own parameters (difficulty, attrition, response propensity,
 teaching-quality effect). There is a gentle improvement trend over the years, and
 teaching quality correlates mildly with grades. Some departments therefore cross warning
-or critical thresholds; for example, Mathematics has a low response rate and a high GWA.
+or critical thresholds; for example Mathematics, Accountancy and Criminology (GWA, faculty meeting the standard).

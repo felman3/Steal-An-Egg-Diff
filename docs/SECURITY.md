@@ -88,7 +88,7 @@ passed:**
 - **Signed out:** tables return 401/42501, analytics functions return 401, and only the health probe answers.
 - **Wrong password:** rejected.
 - **Academic administrator:**
-  - reads every table (113 faculty, 3,670 students, 76,450 grades, 62,450 SETE forms);
+  - reads every table (145 faculty, 5,149 students, 107,840 grades, 88,512 SETE forms);
   - gets results from all 6 analytics functions;
   - can edit targets, and invalid values are rejected (400);
   - every change is audited.

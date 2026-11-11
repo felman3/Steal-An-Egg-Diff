@@ -7,8 +7,6 @@ import {
   Menu,
   Monitor,
   Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Sun,
   Target,
   Users,
@@ -125,6 +123,23 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
   );
 }
 
+/** Icon-only toggle at the top of the sidebar (no text label). */
+function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex size-9 shrink-0 items-center justify-center rounded-lg text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+      aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      aria-expanded={!collapsed}
+      title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      data-testid="toggle-sidebar"
+    >
+      <Menu size={19} aria-hidden />
+    </button>
+  );
+}
+
 export function AppShell() {
   const location = useLocation();
   // The drawer is open only on the page where it was opened, so navigating closes it.
@@ -154,21 +169,14 @@ export function AppShell() {
           data-testid="sidebar"
           data-collapsed={collapsed}
         >
-          <Brand collapsed={collapsed} />
+          <div className={`flex gap-2 ${collapsed ? 'flex-col items-center' : 'items-start justify-between'}`}>
+            {collapsed && <SidebarToggle collapsed onToggle={toggleCollapsed} />}
+            <Brand collapsed={collapsed} />
+            {!collapsed && <SidebarToggle collapsed={false} onToggle={toggleCollapsed} />}
+          </div>
           <Navigation collapsed={collapsed} />
-          <div className="mt-auto flex flex-col gap-3">
+          <div className="mt-auto">
             <UserCard collapsed={collapsed} />
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              className={`flex items-center gap-2 rounded-lg py-2 text-xs font-medium text-ink-2 hover:bg-sunken hover:text-ink ${collapsed ? 'justify-center' : 'px-3'}`}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              data-testid="toggle-sidebar"
-            >
-              {collapsed ? <PanelLeftOpen size={17} aria-hidden /> : <PanelLeftClose size={17} aria-hidden />}
-              {!collapsed && 'Collapse sidebar'}
-            </button>
           </div>
         </aside>
 
@@ -212,14 +220,15 @@ export function AppShell() {
   );
 }
 
-/** Full-width coloured page header: title, current scope and the filters (with icons) in one band. */
+/** Full-width coloured page header: title and scope on the left, filter chips (or page actions) on the right. */
 export function PageHeader({ title, description, showFilters = true, actions }: { title: string; description?: ReactNode; showFilters?: boolean; actions?: ReactNode }) {
   const { describe } = useFilters();
   return (
     <header className="mb-5 rounded-2xl bg-header px-4 py-4 text-header-ink shadow-sm sm:px-6 sm:py-5" data-testid="page-header">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-header-ink/75">Office of Academic Affairs · Academic Administrator</p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
           <p className="mt-1 text-sm text-header-ink/80" data-testid="scope-description">
             {description ?? (
               <>
@@ -228,13 +237,8 @@ export function PageHeader({ title, description, showFilters = true, actions }: 
             )}
           </p>
         </div>
-        {actions}
+        {showFilters ? <FilterBar /> : actions}
       </div>
-      {showFilters && (
-        <div className="mt-4 border-t border-white/15 pt-4">
-          <FilterBar />
-        </div>
-      )}
     </header>
   );
 }

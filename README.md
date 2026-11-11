@@ -34,8 +34,8 @@ administrator. Demo credentials can't be changed by visitors.
 |---|---|
 | One primary user | **Authorized Academic Administrator**; the only role the system grants |
 | **Five KPI cards** | Mean SETE rating · SETE response rate · Course pass rate · Mean GWA · Faculty meeting SETE standard |
-| **Three data visualizations** | ① KPI trend by term (line) · ② KPI by department (horizontal bars) · ③ SETE criteria breakdown (grouped bars) |
-| **Two interactive features** | ① Filters: academic year, semester, college, department · ② Drill-down: click a department bar to filter the whole dashboard to it (plus the KPI measure switch and chart/table toggle) |
+| **Three data visualizations** (four provided) | ① KPI trend by term (line + area) · ② KPI by department (horizontal bars) · ③ SETE criteria breakdown (radar) · ④ Faculty by SETE rating (donut) |
+| **Two interactive features** | ① Filter chips in the header: academic year, semester, college, department · ② Drill-down: click a department bar to filter the whole dashboard to it (plus KPI hover cards, the measure switch, chart/table toggle and collapsible sidebar) |
 | **Warning / alert mechanism** | Alerts panel with recommended management action · status badges · warning/critical bands on the trend chart · "interpret with caution" on SETE cards when the response rate is low |
 | KPI objective, formula, target, management action (Part II) | Stored in `kpi_definitions` / `kpi_targets`; shown on the About page and in KPI-card tooltips |
 | Two warning thresholds | Warning and critical thresholds per KPI, editable on **Targets & thresholds** |
@@ -50,8 +50,8 @@ administrator. Demo credentials can't be changed by visitors.
 |---|---|---|---|---|---|
 | 1 | Mean SETE rating | Teaching effectiveness | Σ criterion scores ÷ count (1–5) | Higher | 4.30 / 4.10 / 3.90 |
 | 2 | SETE response rate | Teaching effectiveness | Evaluations ÷ eligible enrolments | Higher | 90% / 80% / 70% |
-| 3 | Course pass rate | Academic operations | Passing grades (1.00–3.00) ÷ eligible enrolments | Higher | 93% / 88% / 83% (COE 88/83/78) |
-| 4 | Mean GWA | Academic operations | Σ(grade × units) ÷ Σ units | Lower | 2.00 / 2.20 / 2.40 (COE 2.20/2.40/2.60) |
+| 3 | Course pass rate | Academic operations | Passing grades (1.00–3.00) ÷ eligible enrolments | Higher | 93% / 88% / 83% (CHS 88/83/78) |
+| 4 | Mean GWA | Academic operations | Σ(grade × units) ÷ Σ units | Lower | 2.00 / 2.20 / 2.40 (CHS 2.20/2.40/2.60) |
 | 5 | Faculty meeting SETE standard | Teaching effectiveness | % of evaluated faculty with mean ≥ 4.00 | Higher | 90% / 80% / 70% |
 
 Statuses are computed **in the database** from the stored thresholds: *On target → Below target → **Warning** → **Critical***.

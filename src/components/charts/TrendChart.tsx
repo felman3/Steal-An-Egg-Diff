@@ -1,4 +1,4 @@
-import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatInt, shortTermLabel } from '../../lib/format';
 import type { KpiSummaryRow, TrendRow } from '../../lib/types';
 import { fmt, lineDomain, statusZones, tickFormatter } from './chartUtils';
@@ -36,7 +36,13 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
   return (
     <div role="img" aria-label={summary} data-testid="trend-chart" className="relative flex-1" style={{ minHeight }}>
       <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
-        <LineChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: 0 }}>
+        <ComposedChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: 0 }}>
+          <defs>
+            <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.28} />
+              <stop offset="100%" stopColor="var(--series-1)" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
           <CartesianGrid vertical={false} strokeWidth={1} />
           {zones && (
             <>
@@ -72,6 +78,7 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
               );
             }}
           />
+          <Area type="linear" dataKey="value" stroke="none" fill="url(#trend-fill)" connectNulls={false} isAnimationActive={false} activeDot={false} tooltipType="none" />
           <Line
             type="linear"
             dataKey="value"
@@ -93,7 +100,7 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
               );
             }}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
