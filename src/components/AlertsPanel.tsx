@@ -1,7 +1,7 @@
 import { CircleCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { formatValue, STATUS_LABEL, STATUS_RANK } from '../lib/format';
-import type { AppRole, DepartmentKpiRow, FacultyRow, KpiDefinition, KpiSummaryRow } from '../lib/types';
+import type { DepartmentKpiRow, KpiDefinition, KpiSummaryRow } from '../lib/types';
 import { StatusIcon } from './StatusBadge';
 
 interface Alert {
@@ -13,33 +13,23 @@ interface Alert {
   threshold: number;
 }
 
-/**
- * Warning indicators: every KPI that crossed a stored alert threshold, with the next step.
- * - administrator / dean: the scope overall, then each department
- * - program chair: the program overall, then each faculty member below the SETE threshold
- * - faculty member: their own KPIs, with advice addressed to them
- */
+/** Warning indicators: every KPI that crossed a stored alert threshold. */
 export function AlertsPanel({
-  role,
   summary,
-  departments = [],
-  faculty = [],
+  departments,
   scopeLabel,
   definitions = [],
 }: {
-  role: AppRole;
   summary: KpiSummaryRow[];
-  departments?: DepartmentKpiRow[];
-  faculty?: FacultyRow[];
+  departments: DepartmentKpiRow[];
   scopeLabel: string;
   definitions?: KpiDefinition[];
 }) {
-  const location = useLocation();
   const actionFor = (code: string, status: 'warning' | 'critical') => {
     const d = definitions.find((x) => x.code === code);
-    if (role === 'faculty') return d?.faculty_action;
     return status === 'critical' ? d?.critical_action : d?.warning_action;
   };
+  const location = useLocation();
   const byCode = new Map(summary.map((k) => [k.kpi_code, k]));
   const alerts: Alert[] = [];
 
@@ -61,25 +51,9 @@ export function AlertsPanel({
       });
     }
   }
-  const sete = byCode.get('sete_mean');
-  if (sete) {
-    for (const f of faculty) {
-      if ((f.status === 'warning' || f.status === 'critical') && f.mean_rating !== null) {
-        alerts.push({
-          key: `fac-${f.faculty_id}`,
-          scope: f.pseudonym,
-          kpi: sete,
-          value: f.mean_rating,
-          status: f.status,
-          threshold: f.status === 'critical' ? f.critical_threshold : f.warning_threshold,
-        });
-      }
-    }
-  }
   alerts.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.scope.localeCompare(b.scope));
   const critical = alerts.filter((a) => a.status === 'critical').length;
   const shown = alerts.slice(0, 3);
-  const more = role === 'chair' || role === 'dean' ? { to: '/faculty', label: 'faculty results' } : role === 'faculty' ? null : { to: '/departments', label: 'the scorecard' };
 
   return (
     <section className="card flex flex-col p-4 sm:p-5" aria-labelledby="alerts-heading" data-testid="alerts-panel">
@@ -88,9 +62,7 @@ export function AlertsPanel({
           <h2 id="alerts-heading" className="text-[15px] font-semibold text-ink">
             Alerts
           </h2>
-          <p className="mt-0.5 text-[13px] text-ink-2">
-            {role === 'faculty' ? 'Your KPIs past a stored threshold, with a suggested next step' : 'KPIs past a stored threshold, with the recommended management action'}
-          </p>
+          <p className="mt-0.5 text-[13px] text-ink-2">KPIs past a stored threshold, with the recommended management action</p>
         </div>
         <span
           className="tabular shrink-0 whitespace-nowrap rounded-full bg-sunken px-2.5 py-1 text-xs font-semibold text-ink"
@@ -119,7 +91,7 @@ export function AlertsPanel({
                 </p>
                 {actionFor(a.kpi.kpi_code, a.status) && (
                   <p className="mt-1 text-xs leading-snug text-ink-2" data-testid="alert-action">
-                    <strong className="font-semibold text-ink">{role === 'faculty' ? 'Next step:' : 'Action:'}</strong> {actionFor(a.kpi.kpi_code, a.status)}
+                    <strong className="font-semibold text-ink">Action:</strong> {actionFor(a.kpi.kpi_code, a.status)}
                   </p>
                 )}
               </div>
@@ -127,14 +99,11 @@ export function AlertsPanel({
           ))}
         </ul>
       )}
-      {alerts.length > shown.length &&
-        (more ? (
-          <Link to={{ pathname: more.to, search: location.search }} className="mt-3 text-sm font-medium text-accent hover:underline">
-            View all {alerts.length} alerts in {more.label} →
-          </Link>
-        ) : (
-          <p className="mt-3 text-xs text-ink-muted">+ {alerts.length - shown.length} more alert(s) shown on the KPI cards above.</p>
-        ))}
+      {alerts.length > shown.length && (
+        <Link to={{ pathname: '/departments', search: location.search }} className="mt-3 text-sm font-medium text-accent hover:underline">
+          View all {alerts.length} alerts in the scorecard →
+        </Link>
+      )}
     </section>
   );
 }

@@ -29,8 +29,8 @@ export function AboutPage() {
             “Faculty CS-07” and students have synthetic numbers only.
           </li>
           <li>
-            <strong className="text-ink">Users:</strong> academic administrator, dean, program chair and faculty member. Each sees a dashboard
-            limited to their own scope.
+            <strong className="text-ink">Primary user:</strong> the authorized academic administrator (e.g. the Office of the Vice President for
+            Academic Affairs). No other role has access.
           </li>
           <li>
             <strong className="text-ink">Existing vs. proposed:</strong> today the Student and Faculty Portal (enrolment, schedules, grades) and SETE
@@ -52,7 +52,7 @@ export function AboutPage() {
         <div className="space-y-5">
           <section className="card p-4 sm:p-5" aria-labelledby="kpi-defs">
             <h2 id="kpi-defs" className="mb-1 text-[15px] font-semibold text-ink">
-              The KPIs
+              The five KPIs
             </h2>
             <p className="mb-3 text-[13px] text-ink-2">Loaded from the kpi_definitions table. Targets and the two warning thresholds (warning, critical) live in kpi_targets — see Targets &amp; thresholds.</p>
             <DataTable
@@ -155,33 +155,31 @@ export function AboutPage() {
               Who can see what
             </h2>
             <p className="mb-3 text-[13px] text-ink-2">
-              Four user types. Enforced in PostgreSQL by Row-Level Security policies and an authorization check in every analytics function —
-              not just hidden in the interface.
+              One user type. Enforced in PostgreSQL by Row-Level Security policies and an authorization check in every analytics function — not
+              just hidden in the interface.
             </p>
             <DataTable
               spec={{
                 caption: 'Access control',
                 columns: [
                   { key: 'what', label: 'Data' },
-                  { key: 'admin', label: 'Academic Administrator' },
-                  { key: 'dean', label: 'Dean' },
-                  { key: 'chair', label: 'Program Chair' },
-                  { key: 'faculty', label: 'Faculty Member' },
+                  { key: 'admin', label: 'Authorized academic administrator' },
+                  { key: 'other', label: 'Any other signed-in account' },
+                  { key: 'anon', label: 'Signed out' },
                 ],
                 rows: [
-                  { what: 'KPIs, trends, charts, alerts', admin: 'Whole university', dean: 'Own college', chair: 'Own program', faculty: 'Own classes' },
-                  { what: 'Faculty-level SETE results', admin: 'All', dean: 'Own college', chair: 'Own program', faculty: 'Own only' },
-                  { what: 'Student records & final grades (rows)', admin: 'All', dean: 'Own college', chair: 'Own program', faculty: no },
-                  { what: 'Raw SETE forms (anonymous, no student ID)', admin: yes, dean: no, chair: no, faculty: no },
-                  { what: 'Read targets & thresholds', admin: yes, dean: yes, chair: yes, faculty: yes },
-                  { what: 'Change targets, thresholds, settings', admin: yes, dean: no, chair: no, faculty: no },
-                  { what: 'Target change history (audit trail)', admin: yes, dean: no, chair: no, faculty: no },
+                  { what: 'KPIs, trends, charts, alerts', admin: yes, other: no, anon: no },
+                  { what: 'Faculty-level SETE results (pseudonymised)', admin: yes, other: no, anon: no },
+                  { what: 'Student records & final grades', admin: yes, other: no, anon: no },
+                  { what: 'Raw SETE forms (anonymous, no student ID)', admin: yes, other: no, anon: no },
+                  { what: 'Change targets, thresholds, settings', admin: yes, other: no, anon: no },
+                  { what: 'Target change history (audit trail)', admin: yes, other: no, anon: no },
                 ],
               }}
             />
             <p className="mt-3 text-xs text-ink-muted">
-              Signed-out visitors and accounts without a dashboard role receive nothing. Accounts are provisioned (public sign-up is disabled).
-              SETE averages built from fewer responses than the reporting minimum are suppressed so respondents cannot be identified.
+              Accounts are provisioned (public sign-up is disabled) and get no access until an academic administrator profile is granted. SETE
+              averages built from fewer responses than the reporting minimum are suppressed so respondents cannot be identified.
             </p>
           </section>
         </div>

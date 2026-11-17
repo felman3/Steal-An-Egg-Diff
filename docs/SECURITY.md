@@ -1,49 +1,49 @@
 # Security, authentication and authorization
 
-The system serves four user types. A user's role and scope live in `public.user_profiles`; an account without a row there
-can sign in but receives no data.
+The system serves **one user type: the Authorized Academic Administrator**. Being authorized means having a row in
+`public.user_profiles` (role `admin`, shown as "Academic Administrator"). Any other account can sign in, but it is **unauthorized**
+and receives no data.
 
 ## Access model
 
-| Data | Academic Administrator | Dean | Program Chair | Faculty Member | No role / signed out |
-|---|---|---|---|---|---|
-| KPIs, trends, charts, alerts (analytics functions) | all colleges | own college | own program | own classes | ✗ |
-| Faculty-level SETE results | all | own college | own program | own result only | ✗ |
-| Class-level results (`get_class_results`) | — | — | own program | own classes | ✗ |
-| Department comparisons | ✓ | own college | own department | ✗ (42501) | ✗ |
-| Faculty rows (`faculty`) | all | own college | own program | own row | ✗ |
-| Student and grade rows (`students`, `enrollments`) | all | own college | own program | ✗ (0 rows) | ✗ |
-| Raw SETE forms (anonymous) | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Reference data, KPI definitions, targets | read | read | read | read | ✗ |
-| Change targets, thresholds, settings | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Target audit trail | ✓ | ✗ | ✗ | ✗ | ✗ |
-| `app_health()` probe (row counts only) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Data | Authorized academic administrator | Any other signed-in account | Signed out |
+|---|---|---|---|
+| KPIs, trends, charts, alerts (analytics functions) | ✓ all colleges | ✗ error 42501 (HTTP 403) | ✗ 401 |
+| Faculty-level SETE results (pseudonymised) | ✓ | ✗ 42501 | ✗ |
+| Student records and final grades (`students`, `enrollments`) | ✓ | ✗ 0 rows | ✗ |
+| Raw SETE forms (`sete_evaluations`, `sete_scores`, anonymous) | ✓ | ✗ 0 rows | ✗ |
+| Reference data, KPI definitions, targets | ✓ | ✗ 0 rows | ✗ |
+| Change targets, thresholds, settings | ✓ | ✗ | ✗ |
+| Target audit trail | ✓ | ✗ | ✗ |
+| `app_health()` probe (row counts only) | ✓ | ✓ | ✓ |
 
 ## How it is enforced (in the database, not only the UI)
 
 1. **Row-Level Security on all 20 public tables.**
-   - Reference tables are readable by any user with a profile (`private.has_profile()`).
-   - Confidential tables use `private.accessible_department_ids()`, `private.accessible_section_ids()` and `private.own_faculty_id()`.
-   - These helpers are `SECURITY DEFINER` with `search_path = ''`.
+   - Every read policy is `using ((select private.is_admin()))`.
+   - `private.is_admin()` is a `SECURITY DEFINER` function with `search_path = ''`.
+   - Migration `20261111000100_academic_admin_only.sql` set these policies.
 2. **Explicit grants.**
    - `anon` has no table privileges.
-   - `authenticated` has `SELECT`, plus writes on `kpi_targets` and `UPDATE (value)` on `analytics_settings`, both limited to the administrator by RLS.
-3. **Scope resolved in every analytics function.**
-   - Each one starts with `private.authorize_scope()`, which reads the caller's profile and returns the scope the query must use.
-   - A dean is forced to their college, a program chair to their department, and a faculty member to their own faculty record.
-   - A request for anything outside that scope raises **42501** (HTTP 403). The functions return aggregates only.
+   - `authenticated` has `SELECT`, plus writes on `kpi_targets` and `UPDATE (value)` on `analytics_settings`, both limited to administrators by RLS.
+3. **Authorization in every analytics function.**
+   - Every dashboard function is `SECURITY DEFINER` with an empty `search_path`, and starts with `private.authorize_scope()`.
+   - That check raises **42501** unless the caller is an authorized academic administrator, then validates the college/department filter.
+   - The functions return aggregates only.
 4. **No self-authorization.**
-   - Profiles are never created automatically, and there is no client write path to `user_profiles`.
-   - A CHECK constraint (`user_profiles_role_scope`) ties each role to exactly one kind of scope.
+   - Profiles are never created automatically (the old sign-up trigger was removed).
+   - There is no client write path to `user_profiles`.
+   - A CHECK constraint (`user_profiles_academic_admin_only`) allows only the academic-administrator role.
+   - Access must be granted by the service role or SQL.
 5. **Anonymity.**
    - SETE forms store no student identifier.
-   - Averages from fewer than `min_evaluations_reported` (default 5) responses are returned as NULL, including a faculty member's own per-class ratings.
+   - Averages from fewer than `min_evaluations_reported` (default 5) responses are returned as NULL.
    - Faculty are pseudonymised in this prototype.
 6. **Integrity and accountability.**
    - Target values are validated against each KPI's range and direction.
-   - Every change to a target is written to `kpi_target_audit` with the acting user.
+   - Every insert, update and delete of a target is written to `kpi_target_audit` with the acting user.
 7. **The UI mirrors the rules.**
-   - Locked filter chips, role-specific menus and "Restricted" pages are conveniences.
+   - An unauthorized account is shown **Access denied** and no data requests succeed.
    - Editing the URL or calling the API directly still hits the database checks above.
 
 ## Authentication (Supabase Auth)
@@ -55,18 +55,14 @@ can sign in but receives no data.
 
 ### Demonstration accounts
 
-| Account | Role and scope |
+| Account | Purpose |
 |---|---|
-| `admin@example.com` | Academic Administrator: whole university |
-| `dean@example.com` | Dean: College of Informatics and Computing Sciences |
-| `chair@example.com` | Program Chair: BS Information Technology |
-| `faculty@example.com` | Faculty Member: "Faculty IT-07", own classes |
-| `noaccess@example.com` | No role: signs in, then is denied all data (used by the tests; not on the login page) |
+| `demo.academic.admin@example.com` | The primary user: full dashboard |
+| `demo.unauthorized@example.com` | Access-control demonstration: signs in, gets **Access denied**, reads 0 rows |
 
-All use reserved `example.com` addresses and the password `password`, shown on the login page **by design**. That password is
-deliberately weak, which is acceptable only because the accounts hold synthetic data. The
-`private.protect_demo_credentials` trigger keeps their password and email unchanged, so visitors cannot lock others out.
-Real accounts should use strong passwords (the project's minimum length for new passwords is 10).
+Both use reserved `example.com` addresses and are flagged `app_metadata.demo_account = true`. Their shared password is shown on the
+login page **by design**. The `private.protect_demo_credentials` trigger keeps their password and email unchanged, so visitors cannot
+lock others out. Re-running `scripts/db/create-demo-users.mjs` resets them.
 
 ## Secrets handling
 
@@ -87,24 +83,21 @@ Real accounts should use strong passwords (the project's minimum length for new 
 
 ## Verification evidence
 
-`npm run test:security` signs in as each account through Supabase Auth and calls the Data API as the browser does.
-**56/56 checks passed:**
-- **Signed out:** tables and analytics functions are refused; only the health probe answers. A wrong password is rejected.
-- **Rows visible:**
-
-  | Account | faculty | students | class sections | grades | raw SETE forms |
-  |---|---|---|---|---|---|
-  | admin | 145 | 5,149 | 3,230 | 107,840 | 88,512 |
-  | dean (CICS) | 26 | 1,021 | 640 | 21,400 | 0 |
-  | chair (IT) | 14 | 516 | 320 | 10,830 | 0 |
-  | faculty (IT-07) | 1 | 0 | 22 | 0 | 0 |
-  | no role | 0 | 0 | 0 | 0 | 0 |
-
-- **Scope:** every role gets five KPIs for its own scope. Dean, chair and faculty are refused another college; chair and
-  faculty are refused another department; the faculty member is refused department comparisons and sees only their own SETE result and classes.
-- **Writes:** only the administrator can change or restore targets; invalid values are rejected; changes are audited.
-- **Escalation:** a faculty member cannot change their own role, and an account with no role cannot grant itself one.
-- **Demo password:** a visitor's attempt to change it doesn't take effect.
+`npm run test:security` signs in as both accounts through Supabase Auth and calls the Data API as the browser does. **31/31 checks
+passed:**
+- **Signed out:** tables return 401/42501, analytics functions return 401, and only the health probe answers.
+- **Wrong password:** rejected.
+- **Academic administrator:**
+  - reads every table (145 faculty, 5,149 students, 107,840 grades, 88,512 SETE forms);
+  - gets results from all 6 analytics functions;
+  - can edit targets, and invalid values are rejected (400);
+  - every change is audited.
+- **Unauthorized account:**
+  - reads **0 rows** from all 13 tables tested;
+  - is refused all 6 analytics functions and target restore (**42501**);
+  - its target edit changes 0 rows;
+  - its attempt to grant itself a profile is refused (403).
+- **Demo password:** a visitor's attempt to change it doesn't take effect, and the original password still works.
 
 The Playwright suite checks the same rules through the UI.
 

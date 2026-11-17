@@ -1,7 +1,7 @@
-/** Four user types, each with their own dashboard scope. */
-export type AppRole = 'admin' | 'dean' | 'chair' | 'faculty';
+/** The dashboard serves one user type: the authorized academic administrator. */
+export type AppRole = 'admin';
 
-export type KpiCode = 'sete_mean' | 'sete_response_rate' | 'pass_rate' | 'mean_gwa' | 'faculty_standard_rate' | 'ontime_grades';
+export type KpiCode = 'sete_mean' | 'sete_response_rate' | 'pass_rate' | 'mean_gwa' | 'faculty_standard_rate';
 export type KpiUnit = 'rating' | 'percent' | 'grade';
 export type KpiDirection = 'higher_is_better' | 'lower_is_better';
 export type KpiStatus = 'on_target' | 'below_target' | 'warning' | 'critical' | 'no_data' | 'insufficient_data';
@@ -20,8 +20,6 @@ export interface Profile {
   is_demo: boolean;
   college: OrgRef | null;
   department: (OrgRef & { college: OrgRef | null }) | null;
-  /** Set for faculty members: the faculty record their dashboard is limited to. */
-  faculty: { id: number; pseudonym: string; academic_rank: string; department: (OrgRef & { college: OrgRef | null }) | null } | null;
 }
 
 export interface AcademicYear {
@@ -155,24 +153,6 @@ export interface KpiDefinition {
   objective: string | null;
   warning_action: string | null;
   critical_action: string | null;
-  faculty_action: string | null;
-}
-
-export interface ClassResultRow {
-  section_id: number;
-  term_label: string;
-  term_start: string;
-  course_code: string;
-  course_title: string;
-  section_code: string;
-  faculty_pseudonym: string;
-  students: number;
-  evaluations: number;
-  response_rate: number | null;
-  mean_rating: number | null;
-  pass_rate: number | null;
-  mean_grade: number | null;
-  grades_on_time: boolean;
 }
 
 export type KpiCategory = 'Academic operations' | 'Teaching effectiveness';

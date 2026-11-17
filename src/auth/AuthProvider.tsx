@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase
       .from('user_profiles')
       .select(
-        'user_id, full_name, role, title, is_demo, college:colleges(id, code, name), department:departments(id, code, name, college:colleges(id, code, name)), faculty:faculty(id, pseudonym, academic_rank, department:departments(id, code, name, college:colleges(id, code, name)))',
+        'user_id, full_name, role, title, is_demo, college:colleges(id, code, name), department:departments(id, code, name, college:colleges(id, code, name))',
       )
       .eq('user_id', userId)
       .maybeSingle()

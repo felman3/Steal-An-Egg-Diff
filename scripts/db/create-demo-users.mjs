@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
- * Create (or reset) the shared DEMONSTRATION accounts: one per user type
- * (administrator, dean, program chair, faculty member) and one unauthorized
- * account for access-control testing.
+ * Create (or reset) the shared DEMONSTRATION accounts: one authorized academic
+ * administrator and one unauthorized account for access-control testing.
  *
  *   SUPABASE_ACCESS_TOKEN=<personal access token> \
  *   SUPABASE_PROJECT_REF=<project ref> \
@@ -23,8 +22,8 @@ if (!ref || !token || !password) {
   console.error('Set SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN and DEMO_PASSWORD first.');
   process.exit(1);
 }
-if (password.length < 8) {
-  console.error('DEMO_PASSWORD must be at least 8 characters.');
+if (password.length < 10) {
+  console.error('DEMO_PASSWORD must be at least 10 characters.');
   process.exit(1);
 }
 if (/[#\s"'`$\\]/.test(password)) {
@@ -34,24 +33,20 @@ if (/[#\s"'`$\\]/.test(password)) {
   process.exit(1);
 }
 
-// One account per user type, plus a deliberately UNAUTHORIZED account (no
-// profile, not shown on the login page) used by the access-control tests.
+// One authorized ACADEMIC ADMINISTRATOR (the dashboard's only user type) and one
+// deliberately UNAUTHORIZED account (no profile) used to demonstrate that
+// confidential data cannot be accessed by anyone else.
 export const DEMO_ACCOUNTS = [
-  { email: 'admin@example.com', fullName: 'Demo Academic Administrator', role: 'admin', college: null, department: null, faculty: null,
-    title: 'Office of Academic Affairs (demo account)' },
-  { email: 'dean@example.com', fullName: 'Demo Dean, CICS', role: 'dean', college: 'CICS', department: null, faculty: null,
-    title: 'Dean, College of Informatics and Computing Sciences (demo account)' },
-  { email: 'chair@example.com', fullName: 'Demo Program Chair, BSIT', role: 'chair', college: null, department: 'IT', faculty: null,
-    title: 'Program Chair, BS Information Technology (demo account)' },
-  { email: 'faculty@example.com', fullName: 'Demo Faculty Member (IT-07)', role: 'faculty', college: null, department: null, faculty: 'Faculty IT-07',
-    title: 'Faculty member, Information Technology (demo account)' },
-  { email: 'noaccess@example.com', fullName: 'Demo Unauthorized User', role: null, college: null, department: null, faculty: null, title: null },
+  { email: 'demo.academic.admin@example.com', fullName: 'Demo Academic Administrator', authorized: true,
+    title: 'Office of the Vice President for Academic Affairs (demo account)' },
+  { email: 'demo.unauthorized@example.com', fullName: 'Demo Unauthorized User', authorized: false,
+    title: null },
 ];
 
 const lit = (v) => (v === null ? 'null' : `'${String(v).replaceAll("'", "''")}'`);
 
 const values = DEMO_ACCOUNTS.map(
-  (a) => `(${lit(a.email)}, ${lit(a.fullName)}, ${lit(a.role)}, ${lit(a.college)}, ${lit(a.department)}, ${lit(a.faculty)}, ${lit(a.title)})`,
+  (a) => `(${lit(a.email)}, ${lit(a.fullName)}, ${a.authorized}, ${lit(a.title)})`,
 ).join(',\n      ');
 
 const sql = `
@@ -72,7 +67,7 @@ begin
   for r in
     select * from (values
       ${values}
-    ) as t (email, full_name, role, college_code, dept_code, faculty_pseudonym, title)
+    ) as t (email, full_name, authorized, title)
   loop
     select u.id into v_id from auth.users u where u.email = r.email;
 
@@ -103,16 +98,11 @@ begin
        where id = v_id;
     end if;
 
-    if r.role is not null then
-      insert into public.user_profiles (user_id, full_name, role, college_id, department_id, faculty_id, title, is_demo)
-      values (v_id, r.full_name, r.role::public.app_role,
-              (select c.id from public.colleges c where c.code = r.college_code),
-              (select d.id from public.departments d where d.code = r.dept_code),
-              (select f.id from public.faculty f where f.pseudonym = r.faculty_pseudonym),
-              r.title, true)
+    if r.authorized then
+      insert into public.user_profiles (user_id, full_name, role, title, is_demo)
+      values (v_id, r.full_name, 'admin', r.title, true)
       on conflict (user_id) do update
-        set full_name = excluded.full_name, role = excluded.role, college_id = excluded.college_id,
-            department_id = excluded.department_id, faculty_id = excluded.faculty_id, title = excluded.title, is_demo = true;
+        set full_name = excluded.full_name, role = 'admin', title = excluded.title, is_demo = true;
     else
       -- Unauthorized on purpose: signs in successfully but has no profile.
       delete from public.user_profiles where user_id = v_id;
@@ -120,12 +110,9 @@ begin
   end loop;
 end
 $do$;
-select u.email, coalesce(p.role::text, '(none: unauthorized)') as role, c.code as college, d.code as department, f.pseudonym as faculty
+select u.email, coalesce(p.role::text, '(none: unauthorized)') as role, p.is_demo
 from auth.users u
 left join public.user_profiles p on p.user_id = u.id
-left join public.colleges c on c.id = p.college_id
-left join public.departments d on d.id = p.department_id
-left join public.faculty f on f.id = p.faculty_id
 order by 1;`;
 
 const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {

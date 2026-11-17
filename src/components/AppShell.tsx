@@ -17,28 +17,18 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
 import { useFilters } from '../filters/FiltersProvider';
 import { ROLE_LABEL } from '../lib/format';
-import type { AppRole, Profile } from '../lib/types';
 import { useTheme } from '../lib/theme';
 import { FilterBar } from './FilterBar';
 import { PrototypeNotice } from './PrototypeNotice';
 import { ErrorState, LoadingState } from './States';
 
-const NAV: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; roles: readonly AppRole[] }[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true, roles: ['admin', 'dean', 'chair', 'faculty'] },
-  { to: '/departments', label: 'Department scorecard', icon: Building2, roles: ['admin', 'dean', 'chair'] },
-  { to: '/faculty', label: 'Faculty SETE results', icon: Users, roles: ['admin', 'dean', 'chair'] },
-  { to: '/targets', label: 'Targets & thresholds', icon: Target, roles: ['admin', 'dean', 'chair', 'faculty'] },
-  { to: '/about', label: 'About the data', icon: Info, roles: ['admin', 'dean', 'chair', 'faculty'] },
-];
-
-/** What the signed-in user's data is limited to, in a few words. */
-// eslint-disable-next-line react-refresh/only-export-components
-export function scopeText(profile: Profile): string {
-  if (profile.role === 'dean') return profile.college?.code ?? 'own college';
-  if (profile.role === 'chair') return profile.department ? `${profile.department.code} program` : 'own program';
-  if (profile.role === 'faculty') return profile.faculty ? `${profile.faculty.pseudonym} · own classes` : 'own classes';
-  return 'all colleges';
-}
+const NAV = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/departments', label: 'Department scorecard', icon: Building2 },
+  { to: '/faculty', label: 'Faculty SETE results', icon: Users },
+  { to: '/targets', label: 'Targets & thresholds', icon: Target },
+  { to: '/about', label: 'About the data', icon: Info },
+] as const;
 
 const COLLAPSE_KEY = 'sete-dashboard-sidebar-collapsed';
 
@@ -52,16 +42,15 @@ function readCollapsed(): boolean {
 
 function Navigation({ onNavigate, collapsed = false }: { onNavigate?: () => void; collapsed?: boolean }) {
   const location = useLocation();
-  const { profile } = useAuth();
   return (
     <nav aria-label="Main" className="flex flex-col gap-1">
-      {NAV.filter((item) => profile && item.roles.includes(profile.role)).map((item) => {
+      {NAV.map((item) => {
         const Icon = item.icon;
         return (
           <NavLink
             key={item.to}
             to={{ pathname: item.to, search: location.search }}
-            end={item.end ?? false}
+            end={'end' in item ? item.end : false}
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
@@ -103,7 +92,7 @@ function UserCard({ collapsed = false }: { collapsed?: boolean }) {
     <div className="rounded-xl border border-line bg-surface p-3" data-testid="user-card">
       <p className="truncate text-sm font-semibold text-ink">{profile.full_name}</p>
       <p className="mt-0.5 text-xs text-ink-2" data-testid="user-role">
-        {ROLE_LABEL[profile.role]} · {scopeText(profile)}
+        {ROLE_LABEL[profile.role]} · all colleges
       </p>
       {profile.is_demo && (
         <span className="mt-2 inline-block rounded-full bg-warning-bg px-2 py-0.5 text-[11px] font-semibold text-ink">Demo account</span>
@@ -127,7 +116,7 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
       {!collapsed && (
         <div className="leading-tight">
           <p className="text-sm font-semibold text-ink">Academic Quality</p>
-          <p className="text-xs text-ink-2">SETE &amp; academic analytics</p>
+          <p className="text-xs text-ink-2">Academic Administrator</p>
         </div>
       )}
     </div>
@@ -234,12 +223,11 @@ export function AppShell() {
 /** Full-width coloured page header: title and scope on the left, filter chips (or page actions) on the right. */
 export function PageHeader({ title, description, showFilters = true, actions }: { title: string; description?: ReactNode; showFilters?: boolean; actions?: ReactNode }) {
   const { describe } = useFilters();
-  const { profile } = useAuth();
   return (
     <header className="mb-5 rounded-2xl bg-header px-4 py-4 text-header-ink shadow-sm sm:px-6 sm:py-5" data-testid="page-header">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-header-ink/75">{profile ? `${ROLE_LABEL[profile.role]} · ${scopeText(profile)}` : ''}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-header-ink/75">Office of Academic Affairs · Academic Administrator</p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
           <p className="mt-1 text-sm text-header-ink/80" data-testid="scope-description">
             {description ?? (

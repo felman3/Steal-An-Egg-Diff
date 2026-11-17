@@ -12,18 +12,18 @@ serverless function) + **GitHub**.
 | Vercel project | `sete-analytics-dashboard` (`prj_9cTra9p2CwCmdo7wzN5ySalSpuoX`), Git-connected to the repo; functions in `icn1` (Seoul); Node 22.x |
 | Deployment protection | Standard: the production domain is public; preview and per-deployment URLs require Vercel login |
 | Supabase project | `ulcnqgrvqgnihwenqech` (`https://ulcnqgrvqgnihwenqech.supabase.co`), region `ap-northeast-2` (Seoul) |
-| Supabase Auth | Site URL is the production URL; sign-up is disabled; demo accounts: administrator, dean, program chair, faculty member (+ 1 account with no role for tests) |
+| Supabase Auth | Site URL is the production URL; sign-up is disabled; demo accounts: 1 academic administrator + 1 unauthorized test account |
 | GitHub | https://github.com/felman3/Steal-An-Egg-Diff, branch `claude/sweet-franklin-7ux0p5` |
 
-### Verification of the live deployment (2026-11-17, four-role release)
+### Verification of the live deployment (2026-11-11, single-user release)
 
 | Check | Result |
 |---|---|
 | `GET /`, `/login`, deep link `/faculty?ay=4`, `/favicon.svg` with no login | 200 (public; SPA rewrite works) |
 | `GET /api/health` (serverless → database) | 200 `{"status":"ok","database":{"terms":8,"colleges":4,"departments":11,"kpis":5,…},"region":"icn1"}` |
 | Security headers | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` all present |
-| `E2E_BASE_URL=https://sete-analytics-dashboard.vercel.app npm run test:e2e` | **16 passed** (desktop and mobile) |
-| `npm run test:security` | **56/56 passed** |
+| `E2E_BASE_URL=https://sete-analytics-dashboard.vercel.app npm run test:e2e` | **12 passed** (desktop and mobile) |
+| `npm run test:security` | **31/31 passed** |
 | Browser console on the live site | no errors |
 
 ## 1. Environment variables
@@ -56,14 +56,13 @@ node scripts/db/apply.mjs --seed
 ```
 
 ```bash
-DEMO_PASSWORD='password' node scripts/db/create-demo-users.mjs
+DEMO_PASSWORD='Demo-SETE-2026' node scripts/db/create-demo-users.mjs
 ```
 
    On a machine behind an HTTPS proxy, also set `NODE_USE_ENV_PROXY=1` so Node's `fetch` uses it.
 
-   `create-demo-users.mjs` creates one demo account per user type (administrator, dean of CICS, program chair of IT, faculty
-   member IT-07) and a test account with no role. To authorize a real user, insert a `user_profiles` row with their role and
-   scope (college, department or faculty record) using SQL or the service role.
+   `create-demo-users.mjs` creates the **academic administrator** demo account and the **unauthorized** test account (no profile).
+   To authorize a real administrator, insert a `user_profiles` row (role `admin`) for their auth user with SQL or the service role.
 
    `apply.mjs` runs the migrations in order and records them in
    `supabase_migrations.schema_migrations`, so `supabase db push` stays compatible. With

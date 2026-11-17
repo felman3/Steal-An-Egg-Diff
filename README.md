@@ -5,9 +5,9 @@
 > with or endorsed by the university** and is **not integrated** with its Student and Faculty Portal or SETE (Student Evaluation of
 > Teaching Effectiveness). Every student, faculty member, grade and evaluation is **synthetic demonstration data**.
 
-A database-backed decision-support dashboard that combines Student and Faculty Portal records (enrolment, final grades, grade
-submission) with SETE results. It serves the **four user types** named in the case study, each with a dashboard limited to their
-own scope: **Authorized Academic Administrator**, **Dean**, **Program Chair** and **Faculty Member**.
+A database-backed decision-support dashboard for **one primary user: the Authorized Academic Administrator** (e.g. the Office of the
+Vice President for Academic Affairs). It combines Student and Faculty Portal records (enrolment, final grades) with SETE results to
+monitor academic performance and teaching effectiveness.
 
 | | |
 |---|---|
@@ -18,51 +18,33 @@ own scope: **Authorized Academic Administrator**, **Dean**, **Program Chair** an
 
 ## Demo access
 
-Public sign-up is disabled. The login page has a one-click button for each account. **Password for all: `password`**
+Public sign-up is disabled. The login page has a one-click button for the primary user.
 
-| User type | Email | Dashboard |
-|---|---|---|
-| Academic Administrator | `admin@example.com` | Whole university; edits targets and thresholds |
-| Dean | `dean@example.com` | College of Informatics and Computing Sciences (CICS) |
-| Program Chair | `chair@example.com` | BS Information Technology program |
-| Faculty Member | `faculty@example.com` | Own classes only (pseudonym "Faculty IT-07") |
+| Account | Email | Password | Result |
+|---|---|---|---|
+| **Academic Administrator** (primary user) | `demo.academic.admin@example.com` | `Demo-SETE-2026` | Full dashboard |
+| Unauthorized test account | `demo.unauthorized@example.com` | `Demo-SETE-2026` | Signs in, then **Access denied**; the database returns no data |
 
-Demo credentials can't be changed by visitors. `noaccess@example.com` (same password, not on the login page) has no dashboard
-role and is denied all data; the tests use it.
+The second account exists only to demonstrate that confidential data can't be reached by anyone who isn't an authorized academic
+administrator. Demo credentials can't be changed by visitors.
 
-## What each user sees
+## Case-study requirements → where they are
 
-Same layout and design for everyone: filter chips, five KPI cards, alerts, a trend chart and three more charts. The content changes:
-
-| | Academic Administrator | Dean | Program Chair | Faculty Member |
-|---|---|---|---|---|
-| **Scope** | All colleges | Own college (locked) | Own program (locked) | Own classes (locked) |
-| **Filters** | Year, semester, college, department | Year, semester, department | Year, semester | Year, semester |
-| **5 KPI cards** | SETE rating · Response rate · Pass rate · GWA · Faculty meeting standard | Same, for the college | Same, for the program | **My** SETE rating · response rate · pass rate · class GWA · **on-time grade submission** |
-| **Trend chart** | Any KPI by term | College | Program | My own results by term |
-| **Comparison chart** | By department (click to drill down) | Departments of the college + mini scorecard | **By faculty member** | **By class**, with class details |
-| **SETE criteria radar** | Selection vs institution | College vs institution | Program vs institution | **Mine vs my department** |
-| **Donut** | Faculty by SETE rating | College faculty by rating | Program faculty by rating | **My grade distribution** |
-| **Alerts** | KPIs and departments past thresholds, with management action | + faculty in the critical zone | + every flagged faculty member | Own KPIs, with a suggested next step |
-| **Other pages** | Scorecard, faculty results, targets (edit), about | Scorecard, faculty results, targets (read) | Scorecard, faculty results, targets (read) | Targets (read), about |
-
-| Administrator | Faculty member |
+| Requirement (Part III) | In the dashboard |
 |---|---|
-| ![Administrator dashboard](docs/screenshots/overview-admin.png) | ![Faculty dashboard](docs/screenshots/dashboard-faculty.png) |
+| One primary user | **Authorized Academic Administrator**; the only role the system grants |
+| **Five KPI cards** | Mean SETE rating · SETE response rate · Course pass rate · Mean GWA · Faculty meeting SETE standard |
+| **Three data visualizations** (four provided) | ① KPI trend by term (line + area) · ② KPI by department (horizontal bars) · ③ SETE criteria breakdown (radar) · ④ Faculty by SETE rating (donut) |
+| **Two interactive features** | ① Filter chips in the header: academic year, semester, college, department · ② Drill-down: click a department bar to filter the whole dashboard to it (plus KPI hover cards, the measure switch, chart/table toggle and collapsible sidebar) |
+| **Warning / alert mechanism** | Alerts panel with recommended management action · status badges · warning/critical bands on the trend chart · "interpret with caution" on SETE cards when the response rate is low |
+| KPI objective, formula, target, management action (Part II) | Stored in `kpi_definitions` / `kpi_targets`; shown on the About page and in KPI-card tooltips |
+| Two warning thresholds | Warning and critical thresholds per KPI, editable on **Targets & thresholds** |
+| Responsible SETE interpretation | Response rate beside SETE, low-response flags, small-sample suppression, responsible-use notice |
+| Protect confidential data | Row-Level Security + authorization in every analytics function; anonymous SETE; audit trail |
 
-Dean and Program Chair: [`dashboard-dean.png`](docs/screenshots/dashboard-dean.png), [`dashboard-chair.png`](docs/screenshots/dashboard-chair.png).
+![Academic Administrator Dashboard](docs/screenshots/overview-admin.png)
 
-## Case-study requirements (Part III), met by every dashboard
-
-| Requirement | Where |
-|---|---|
-| **Five KPI cards** | Top row, each labelled *Academic operations* or *Teaching effectiveness* |
-| **Three data visualizations** (four provided) | Trend line with area · comparison bars · SETE criteria radar · donut |
-| **Two interactive features** | Filter chips (academic year, semester, college, department) · click a department bar to drill down · plus KPI hover cards, measure switch, chart/table toggle |
-| **Warning / alert mechanism** | Alerts panel with an action · status badges · warning and critical bands on the trend chart · low-response caution on SETE cards |
-| Confidential data protected | Row-Level Security and an authorization check in every analytics function (see [Security](docs/SECURITY.md)) |
-
-## The KPIs
+## The five KPIs
 
 | # | KPI | Category | Formula | Better | Target / warning / critical |
 |---|---|---|---|---|---|
@@ -70,8 +52,7 @@ Dean and Program Chair: [`dashboard-dean.png`](docs/screenshots/dashboard-dean.p
 | 2 | SETE response rate | Teaching effectiveness | Evaluations ÷ eligible enrolments | Higher | 90% / 80% / 70% |
 | 3 | Course pass rate | Academic operations | Passing grades (1.00–3.00) ÷ eligible enrolments | Higher | 93% / 88% / 83% (CHS 88/83/78) |
 | 4 | Mean GWA | Academic operations | Σ(grade × units) ÷ Σ units | Lower | 2.00 / 2.20 / 2.40 (CHS 2.20/2.40/2.60) |
-| 5 | Faculty meeting SETE standard *(admin, dean, chair)* | Teaching effectiveness | % of evaluated faculty with mean ≥ 4.00 | Higher | 90% / 80% / 70% |
-| 5 | On-time grade submission *(faculty member)* | Academic operations | Sections with grades in by the deadline ÷ sections handled | Higher | 95% / 85% / 75% |
+| 5 | Faculty meeting SETE standard | Teaching effectiveness | % of evaluated faculty with mean ≥ 4.00 | Higher | 90% / 80% / 70% |
 
 Statuses are computed **in the database** from the stored thresholds: *On target → Below target → **Warning** → **Critical***.
 Objectives and management actions per KPI are in [docs/CASE_STUDY.md](docs/CASE_STUDY.md#part-ii-kpi-identification-and-design).
@@ -84,8 +65,8 @@ Browser (React 19 + TypeScript + Vite + Tailwind 4 + Recharts 3)
    ▼
 Supabase ── Auth (email/password, sign-up disabled)
         └─ PostgreSQL 17
-              • 20 tables, Row-Level Security on every one, scoped by role
-              • analytics functions that resolve the caller's scope, then return aggregates
+              • 20 tables, Row-Level Security on every one: academic administrators only
+              • analytics functions that check authorization, then return aggregates
               • materialized fact views (private schema, not exposed)
 Vercel ── static SPA (client-side routing, security headers, CSP)
        └─ /api/health  serverless function (server-side database check)
@@ -96,11 +77,11 @@ Vercel ── static SPA (client-side routing, security headers, CSP)
 ```
 api/health.ts                     Vercel serverless function
 src/                              React app (pages, components, charts, auth, filters)
-supabase/migrations/              Schema · RLS & security · analytics · roles and per-role dashboards
+supabase/migrations/              Schema · RLS & security · analytics · academic-admin-only access
 supabase/seed/                    Deterministic synthetic data (5 steps)
 scripts/db/apply.mjs              Apply migrations / seed through the Supabase Management API
 scripts/db/create-demo-users.mjs  Create or reset the demo accounts
-scripts/test/verify-security.mjs  56 live access-control checks across the four roles
+scripts/test/verify-security.mjs  31 live access-control checks
 tests/e2e/                        Playwright end-to-end tests
 docs/                             Case study, database, security and deployment documentation
 ```
@@ -136,13 +117,12 @@ npm run test:security         # live access-control checks (needs .env.local)
 ## Verification
 
 - Type-check and lint pass with 0 problems, and the production build succeeds.
-- **16/16** Playwright tests pass: sign-in, the administrator's KPIs, charts, filters, drill-down and empty state, then each of
-  the dean, program chair and faculty dashboards (scope locks, role-specific charts, blocked pages), an account with no role, and mobile layout.
-- **56/56** live access-control checks pass (`npm run test:security`): each role reads only its own scope from the database.
+- **13/13** Playwright tests pass. They cover sign-in, the collapsible sidebar, the 5 KPI cards with categories, alerts with actions, all 3 charts, all four
+  filters, department drill-down, the empty state, the responsible-use notice, the unauthorized account being denied, and mobile layout.
+- **31/31** live access-control checks pass. The unauthorized account reads 0 rows from every table and is refused every analytics function.
 
 ## Limitations
 
 - Synthetic data only; no integration with the official Student and Faculty Portal or SETE (integration is the *proposed* solution).
-- The demo password is deliberately simple and public; the accounts hold synthetic data only.
 - The shared demo administrator can change targets. **Restore defaults** resets them, and every change is in the audit trail.
 - Faculty are pseudonymised ("Faculty CS-07"); a real deployment would need a privacy impact assessment under the Data Privacy Act of 2012.
