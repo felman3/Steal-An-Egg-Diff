@@ -1,4 +1,4 @@
-import { Building2, CalendarDays, CalendarRange, ChevronDown, Network, type LucideIcon } from 'lucide-react';
+import { Building2, CalendarDays, CalendarRange, ChevronDown, Lock, Network, type LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import { useFilters } from '../filters/FiltersProvider';
 
@@ -15,6 +15,7 @@ function FilterChip({
   options,
   allLabel,
   testId,
+  locked = false,
 }: {
   label: string;
   icon: LucideIcon;
@@ -23,6 +24,8 @@ function FilterChip({
   options: { id: number; label: string; short?: string }[];
   allLabel: string;
   testId: string;
+  /** Fixed by the user's role: shown, but cannot be changed. */
+  locked?: boolean;
 }) {
   const id = useId();
   const current = options.find((o) => o.id === value);
@@ -39,15 +42,21 @@ function FilterChip({
           {current ? (current.short ?? current.label) : allLabel}
         </span>
       </span>
-      <ChevronDown size={15} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-2" aria-hidden />
+      {locked ? (
+        <Lock size={13} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-muted" aria-label="fixed by your role" />
+      ) : (
+        <ChevronDown size={15} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-2" aria-hidden />
+      )}
       <select
         id={id}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        className={`absolute inset-0 h-full w-full opacity-0 ${locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+        disabled={locked}
+        title={locked ? 'Fixed by your role' : undefined}
         value={value === null ? 'all' : String(value)}
         data-testid={testId}
         onChange={(e) => onChange(e.target.value === 'all' ? null : Number(e.target.value))}
       >
-        <option value="all">{allLabel}</option>
+        {!locked && <option value="all">{allLabel}</option>}
         {options.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}
@@ -60,7 +69,7 @@ function FilterChip({
 
 /** Filter chips shown in the page header; every card, chart and alert re-renders against them. */
 export function FilterBar() {
-  const { reference, filters, setFilters, collegeOptions, departmentOptions } = useFilters();
+  const { reference, filters, setFilters, collegeOptions, departmentOptions, locks } = useFilters();
   if (!reference) return null;
 
   return (
@@ -91,6 +100,7 @@ export function FilterBar() {
         options={collegeOptions.map((c) => ({ id: c.id, label: `${c.code} · ${c.name.replace('College of ', '')}`, short: c.code }))}
         allLabel="All"
         testId="filter-college"
+        locked={locks.college}
       />
       <FilterChip
         label="Department"
@@ -100,6 +110,7 @@ export function FilterBar() {
         options={departmentOptions.map((d) => ({ id: d.id, label: `${d.code} · ${d.name.replace('Department of ', '')}`, short: d.code }))}
         allLabel="All"
         testId="filter-department"
+        locked={locks.department}
       />
     </div>
   );

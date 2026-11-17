@@ -4,6 +4,9 @@ import type { CriterionRow } from '../../lib/types';
 import { CRITERION_SHORT } from './chartUtils';
 import { TooltipBox, TooltipRow } from './ChartTooltip';
 
+/** Short axis labels so the left and right ones stay inside a narrow card. */
+const RADAR_LABEL: Record<string, string> = { A: 'Commitment', B: 'Knowledge', C: 'Independent learning', D: 'Management' };
+
 interface Datum {
   label: string;
   full: string;
@@ -12,9 +15,20 @@ interface Datum {
   n: number;
 }
 
-export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRow[]; scopeLabel: string; compare: boolean }) {
+export function CriteriaChart({
+  rows,
+  scopeLabel,
+  compare,
+  benchmarkLabel = 'Institution',
+}: {
+  rows: CriterionRow[];
+  scopeLabel: string;
+  compare: boolean;
+  /** What the dashed benchmark shape represents (the department, for a faculty member). */
+  benchmarkLabel?: string;
+}) {
   const data: Datum[] = rows.map((r) => ({
-    label: `${r.criterion_code}. ${CRITERION_SHORT[r.criterion_code] ?? r.criterion_name}`,
+    label: `${r.criterion_code}. ${RADAR_LABEL[r.criterion_code] ?? CRITERION_SHORT[r.criterion_code] ?? r.criterion_name}`,
     full: `${r.criterion_code}. ${r.criterion_name}`,
     scope: r.scope_mean,
     institution: r.institution_mean,
@@ -32,13 +46,13 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
     <div data-testid="criteria-chart" className="flex flex-1 flex-col">
       <div role="img" aria-label={summary} className="relative flex-1" style={{ minHeight: 280 }}>
         <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
-          <RadarChart data={data} outerRadius="78%" margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
+          <RadarChart data={data} outerRadius="68%" margin={{ top: 8, right: 36, bottom: 8, left: 36 }}>
             <PolarGrid stroke="var(--grid)" />
             <PolarAngleAxis dataKey="label" tick={{ fontSize: 12, fill: 'var(--ink-2)' }} />
             <PolarRadiusAxis domain={[floor, 5]} tickCount={floor === 3 ? 5 : 5} angle={90} tick={{ fontSize: 10, fill: 'var(--axis-ink)' }} axisLine={false} />
             {compare && (
               <Radar
-                name="Institution"
+                name={benchmarkLabel}
                 dataKey="institution"
                 stroke="var(--series-muted)"
                 strokeDasharray="4 3"
@@ -65,7 +79,7 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
                 return (
                   <TooltipBox title={d.full}>
                     <TooltipRow label={scopeLabel} value={d.scope?.toFixed(2) ?? 'Suppressed'} keyColor="var(--series-1)" keyShape="square" />
-                    {compare && <TooltipRow label="Institution" value={d.institution?.toFixed(2) ?? '—'} keyColor="var(--series-muted)" keyShape="square" />}
+                    {compare && <TooltipRow label={benchmarkLabel} value={d.institution?.toFixed(2) ?? '—'} keyColor="var(--series-muted)" keyShape="square" />}
                     <TooltipRow label="Criterion scores" value={formatInt(d.n)} />
                   </TooltipBox>
                 );
@@ -82,7 +96,7 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
               <span aria-hidden className="inline-block size-2.5 rounded-sm" style={{ background: 'var(--series-1)' }} /> {scopeLabel}
             </li>
             <li className="flex items-center gap-1.5">
-              <span aria-hidden className="inline-block size-2.5 rounded-sm" style={{ background: 'var(--series-muted)' }} /> Institution benchmark
+              <span aria-hidden className="inline-block size-2.5 rounded-sm" style={{ background: 'var(--series-muted)' }} /> {benchmarkLabel} benchmark
             </li>
           </ul>
         ) : (
@@ -96,7 +110,7 @@ export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRo
             <p className="mt-0.5 text-sm font-semibold text-ink">{weakest.full}</p>
             <p className="text-xs text-ink-2">
               Lowest-rated criterion ({weakest.scope?.toFixed(2)}
-              {compare && weakest.institution !== null ? `; institution ${weakest.institution.toFixed(2)}` : ''}). A candidate theme for faculty
+              {compare && weakest.institution !== null ? `; ${benchmarkLabel.toLowerCase()} ${weakest.institution.toFixed(2)}` : ''}). A candidate theme for faculty
               development.
             </p>
           </div>

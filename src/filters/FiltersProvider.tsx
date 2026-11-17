@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
+import { useAuth } from '../auth/AuthProvider';
 import { fetchReferenceData, type ReferenceData } from '../lib/api';
 import type { AppError } from '../lib/errors';
 import type { College, Department, Filters } from '../lib/types';
@@ -19,6 +20,8 @@ interface FiltersContextValue {
   setFilters: (patch: Partial<Filters>) => void;
   resetFilters: () => void;
   describe: { period: string; scope: string };
+  /** Filters fixed by the user's role (dean: college; program chair and faculty: college + department). */
+  locks: { college: boolean; department: boolean };
 }
 
 const FiltersContext = createContext<FiltersContextValue | null>(null);
@@ -32,12 +35,17 @@ function parseParam(v: string | null): number | 'all' | undefined {
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
   const [params, setParams] = useSearchParams();
+  const { profile } = useAuth();
   const ref = useQuery('reference', fetchReferenceData);
   const reference = ref.data;
 
+  const ownDepartment = profile?.role === 'chair' ? profile.department : profile?.role === 'faculty' ? (profile.faculty?.department ?? null) : null;
+  const lockedCollegeId = profile?.role === 'dean' ? (profile.college?.id ?? null) : (ownDepartment?.college?.id ?? null);
+  const lockedDepartmentId = ownDepartment?.id ?? null;
+
 
   const filters = useMemo<Filters>(() => {
-    if (!reference) return { academicYearId: null, semesterId: null, collegeId: null, departmentId: null };
+    if (!reference) return { academicYearId: null, semesterId: null, collegeId: lockedCollegeId, departmentId: lockedDepartmentId };
     const latestAy = reference.academicYears[0]?.id ?? null;
 
     const ay = parseParam(params.get('ay'));
@@ -48,7 +56,8 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const semesterId = typeof sem === 'number' && reference.semesters.some((s) => s.id === sem) ? sem : null;
 
     const col = parseParam(params.get('college'));
-    const collegeId = typeof col === 'number' && reference.colleges.some((c) => c.id === col) ? col : null;
+    let collegeId = typeof col === 'number' && reference.colleges.some((c) => c.id === col) ? col : null;
+    if (lockedCollegeId) collegeId = lockedCollegeId; // a hand-edited URL cannot leave the user's scope
 
     const dep = parseParam(params.get('dept'));
     let departmentId: number | null = null;
@@ -57,15 +66,21 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       if (d && (collegeId === null || d.college_id === collegeId)) departmentId = d.id;
     }
 
-    return { academicYearId, semesterId, collegeId, departmentId };
-  }, [reference, params]);
+    if (lockedDepartmentId) departmentId = lockedDepartmentId;
 
-  const collegeOptions = useMemo(() => reference?.colleges ?? [], [reference]);
+    return { academicYearId, semesterId, collegeId, departmentId };
+  }, [reference, params, lockedCollegeId, lockedDepartmentId]);
+
+  const collegeOptions = useMemo(() => {
+    const all = reference?.colleges ?? [];
+    return lockedCollegeId ? all.filter((c) => c.id === lockedCollegeId) : all;
+  }, [reference, lockedCollegeId]);
 
   const departmentOptions = useMemo(() => {
     const all = reference?.departments ?? [];
+    if (lockedDepartmentId) return all.filter((d) => d.id === lockedDepartmentId);
     return filters.collegeId ? all.filter((d) => d.college_id === filters.collegeId) : all;
-  }, [reference, filters.collegeId]);
+  }, [reference, lockedDepartmentId, filters.collegeId]);
 
   const setFilters = useCallback(
     (patch: Partial<Filters>) => {
@@ -105,9 +120,10 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const col = reference?.colleges.find((c) => c.id === filters.collegeId);
     const dep = reference?.departments.find((d) => d.id === filters.departmentId);
     const period = [sem ? sem.name : 'All semesters', ay ? `AY ${ay.label}` : 'All academic years'].join(' · ');
-    const scope = dep ? `${col?.code ?? ''} · ${dep.name.replace('Department of ', '')}` : col ? col.name : 'All colleges';
+    let scope = dep ? `${col?.code ?? ''} · ${dep.name.replace('Department of ', '')}` : col ? col.name : 'All colleges';
+    if (profile?.role === 'faculty' && profile.faculty) scope = `${profile.faculty.pseudonym} · my classes`;
     return { period, scope };
-  }, [reference, filters]);
+  }, [reference, filters, profile]);
 
   const filterKey = `${filters.academicYearId ?? 'all'}|${filters.semesterId ?? 'all'}|${filters.collegeId ?? 'all'}|${filters.departmentId ?? 'all'}`;
 
@@ -124,6 +140,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     setFilters,
     resetFilters,
     describe,
+    locks: { college: Boolean(lockedCollegeId), department: Boolean(lockedDepartmentId) },
   };
 
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;

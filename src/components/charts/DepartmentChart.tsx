@@ -32,11 +32,16 @@ export function DepartmentChart({
   rows,
   kpi,
   onSelectDepartment,
+  labelWidth = 46,
+  testId = 'department-chart',
 }: {
   rows: DepartmentKpiRow[];
   kpi: KpiSummaryRow;
   /** Drill-down: clicking a bar filters the whole dashboard to that department. */
   onSelectDepartment?: (departmentId: number, collegeId: number) => void;
+  /** Width reserved for the category labels (wider for faculty or class names). */
+  labelWidth?: number;
+  testId?: string;
 }) {
   const better = kpi.direction === 'higher_is_better' ? -1 : 1;
   const data: Datum[] = rows
@@ -62,13 +67,13 @@ export function DepartmentChart({
   const summary = `${kpi.kpi_name} by department: ${data.map((d) => `${d.name} ${fmt(d.value, kpi.unit, kpi.decimals)} (${STATUS_LABEL[d.status]})`).join('; ')}.`;
 
   return (
-    <div data-testid="department-chart">
+    <div data-testid={testId}>
       <div role="img" aria-label={summary}>
         <ResponsiveContainer width="100%" height={height}>
           <BarChart data={data} layout="vertical" margin={{ top: 4, right: 104, bottom: 4, left: 4 }} barSize={BAR} barGap={-BAR}>
             <CartesianGrid horizontal={false} />
             <XAxis type="number" domain={domain} tickLine={false} axisLine={{ stroke: 'var(--axis)' }} tick={{ fontSize: 12 }} tickFormatter={tickFormatter(kpi.unit)} />
-            <YAxis type="category" dataKey="code" width={46} tickLine={false} axisLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
+            <YAxis type="category" dataKey="code" width={labelWidth} tickLine={false} axisLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
             <Tooltip
               cursor={{ fill: 'var(--wash-1)' }}
               content={({ active, payload }) => {

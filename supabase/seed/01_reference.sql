@@ -143,7 +143,11 @@ values
   (5, 'faculty_standard_rate', 'Faculty Meeting SETE Standard', 'Faculty at standard',
    'Share of evaluated faculty whose mean SETE rating is at or above the institutional standard (see analytics settings). Faculty with too few responses are excluded.',
    'Faculty with mean rating >= standard / faculty with enough responses x 100',
-   'percent', 'higher_is_better', 1, 'SETE responses (synthetic)', 0, 100, 5);
+   'percent', 'higher_is_better', 1, 'SETE responses (synthetic)', 0, 100, 5),
+  (6, 'ontime_grades', 'On-time Grade Submission', 'Grades on time',
+   'Share of class sections whose final grades were submitted on or before the grade deadline. Shown on the faculty member''s own dashboard.',
+   'Sections with grades submitted by the deadline / sections handled x 100',
+   'percent', 'higher_is_better', 1, 'Grade submission dates (synthetic)', 0, 100, 6);
 
 insert into private.kpi_target_baseline (kpi_id, college_id, target_value, warning_threshold, critical_threshold, notes)
 select k.id, c.id, v.target, v.warning, v.critical, v.notes
@@ -153,6 +157,7 @@ from (values
   ('pass_rate',             null,   93,   88,   83,   'Institution-wide standard'),
   ('mean_gwa',              null,   2.00, 2.20, 2.40, 'Institution-wide standard (lower is better)'),
   ('faculty_standard_rate', null,   90,   80,   70,   'Institution-wide standard'),
+  ('ontime_grades',         null,   95,   85,   75,   'Institution-wide standard'),
   ('pass_rate',             'CHS',  88,   83,   78,   'Licensure-exam programs: differentiated target'),
   ('mean_gwa',              'CHS',  2.20, 2.40, 2.60, 'Licensure-exam programs: differentiated target')
 ) as v (kpi, college, target, warning, critical, notes)

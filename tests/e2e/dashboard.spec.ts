@@ -11,7 +11,7 @@ test.describe('authentication', () => {
 
   test('wrong password shows an error and stays on login', async ({ page }) => {
     await page.goto('/login');
-    await page.getByLabel('Email').fill('demo.academic.admin@example.com');
+    await page.getByLabel('Email').fill('admin@example.com');
     await page.getByLabel('Password', { exact: true }).fill('not-the-password');
     await page.getByTestId('login-submit').click();
     await expect(page.getByTestId('login-error')).toContainText('Incorrect email or password');
@@ -125,13 +125,68 @@ test('faculty SETE results carry the responsible-use notice', async ({ page }) =
   await expect(page.getByTestId('faculty-table')).toBeVisible();
 });
 
-test.describe('access control (only authorized academic administrators)', () => {
-  test('an unauthorized account can sign in but is denied all data', async ({ page }) => {
-    await signInAs(page, 'unauthorized');
-    await expect(page.getByTestId('access-denied')).toContainText('authorized academic administrators');
+test.describe('role-based dashboards', () => {
+  test('dean: locked to their college, compares its departments, cannot edit targets', async ({ page }) => {
+    await signInAs(page, 'dean');
+    await waitForKpis(page);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText("Dean's Dashboard");
+    await expect(page.getByTestId('filter-college')).toBeDisabled();
+    await expect(page.getByTestId('filter-department')).toBeEnabled();
+    await expect(page.getByTestId('scope-description')).toContainText('College of Informatics and Computing Sciences');
+    await expect(page.getByTestId('department-chart').locator('.recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value')).toHaveText(['IT', 'CS']);
+    await expect(page.getByTestId('mini-scorecard')).toContainText('CS');
+    // A hand-edited URL for another college is ignored; the scope stays CICS.
+    await page.goto('/?college=6');
+    await waitForKpis(page);
+    await expect(page.getByTestId('scope-description')).toContainText('College of Informatics and Computing Sciences');
+    await page.goto('/targets');
+    await expect(page.getByTestId('targets-readonly')).toBeVisible();
+    await expect(page.getByTestId('save-target')).toHaveCount(0);
+  });
+
+  test('program chair: locked to their program, compares faculty members', async ({ page }) => {
+    await signInAs(page, 'chair');
+    await waitForKpis(page);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Program Chair Dashboard');
+    await expect(page.getByTestId('filter-college')).toBeDisabled();
+    await expect(page.getByTestId('filter-department')).toBeDisabled();
+    await expect(page.getByTestId('scope-description')).toContainText('Information Technology');
+    await expect(page.getByTestId('faculty-bars').locator('.recharts-bar-rectangle').first()).toBeVisible();
+    await expect(page.getByTestId('card-departments')).toHaveCount(0);
+    await expect(page.getByTestId('alerts-panel')).toContainText('Faculty IT-');
+    await page.goto('/faculty');
+    await expect(page.getByTestId('faculty-table')).toContainText('Faculty IT-');
+    await expect(page.getByTestId('faculty-table')).not.toContainText('Faculty CS-');
+  });
+
+  test('faculty member: only their own classes, with their own five KPIs', async ({ page }) => {
+    await signInAs(page, 'faculty');
+    await waitForKpis(page);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('My Teaching Dashboard');
+    await expect(page.getByTestId('kpi-ontime_grades')).toBeVisible();
+    await expect(page.getByTestId('kpi-faculty_standard_rate')).toHaveCount(0);
+    await expect(page.getByTestId('kpi-grid').locator('[data-testid^="kpi-value-"]')).toHaveCount(5);
+    await expect(page.getByTestId('class-bars').locator('.recharts-bar-rectangle').first()).toBeVisible();
+    await expect(page.getByTestId('criteria-chart')).toContainText('Department benchmark');
+    await expect(page.getByTestId('grade-donut').locator('.recharts-pie-sector').first()).toBeVisible();
+    await expect(page.getByTestId('alert-action').first()).toContainText('Next step:');
+    // Other people's results are not in the menu and are refused if opened directly.
+    await expect(page.getByRole('link', { name: 'Faculty SETE results' })).toHaveCount(0);
+    await page.goto('/faculty');
+    await expect(page.getByTestId('restricted-state')).toBeVisible();
+    await expect(page.getByTestId('faculty-table')).toHaveCount(0);
+    await page.goto('/departments');
+    await expect(page.getByTestId('restricted-state')).toBeVisible();
+  });
+
+  test('an account without a dashboard role is denied all data', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel('Email').fill('noaccess@example.com');
+    await page.getByLabel('Password', { exact: true }).fill('password');
+    await page.getByTestId('login-submit').click();
+    await expect(page.getByTestId('access-denied')).toContainText('authorized users');
     await page.goto('/faculty');
     await expect(page.getByTestId('access-denied')).toBeVisible();
-    await expect(page.getByTestId('faculty-table')).toHaveCount(0);
   });
 });
 

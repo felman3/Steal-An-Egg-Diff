@@ -8,6 +8,7 @@ PostgreSQL 17 on Supabase. All objects are created by the migrations in
 | `20261106000100_core_schema.sql` | Enum types, the 20 normalized tables, constraints, FK indexes |
 | `20261106000200_security_rls.sql` | Role/scope helpers, triggers (profile bootstrap, demo-credential protection, target validation and audit), RLS policies, grants |
 | `20261106000300_analytics.sql` | Materialized fact views, the KPI engine, dashboard RPCs, health probe |
+| `20261117000100_add_faculty_role.sql`, `20261117000200_role_dashboards.sql` | Four roles (administrator, dean, program chair, faculty member): profile scope, scoped RLS, `authorize_scope`, faculty-scoped KPI engine, on-time grade submission, `get_class_results` |
 | `20261111000100_academic_admin_only.sql` | Single primary user: every policy and analytics function restricted to the authorized academic administrator; no automatic profiles; case-study college names; KPI category, objective and management actions |
 
 All rows are **synthetic demonstration data** loaded by [`supabase/seed/`](../supabase/seed).
@@ -86,7 +87,7 @@ erDiagram
 | `kpi_targets` | `kpi_id`, `college_id` (NULL = institution default), `target_value`, `warning_threshold`, `critical_threshold`, `notes`, `updated_at`, `updated_by` | `UNIQUE NULLS NOT DISTINCT (kpi_id, college_id)`. A trigger validates range and order for the KPI's direction |
 | `kpi_target_audit` | `kpi_id`, `college_id`, `action`, `old_values`, `new_values`, `changed_by`, `changed_at` | Append-only, written by a trigger |
 | `analytics_settings` | `key`, `value`, `default_value`, `min_value`, `max_value`, `label`, `description` | `faculty_rating_standard` (4.00), `min_evaluations_reported` (5) |
-| `user_profiles` | `user_id` → auth.users, `full_name`, `role`, `title`, `is_demo` | **A row here is the authorization.** CHECK `user_profiles_academic_admin_only` allows only the academic-administrator role (`admin`); accounts without a row get no data |
+| `user_profiles` | `user_id` → auth.users, `full_name`, `role`, `title`, `is_demo` | **A row here is the authorization.** Also `college_id`, `department_id`, `faculty_id`. CHECK `user_profiles_role_scope`: admin ⇒ no scope, dean ⇒ college, chair ⇒ department, faculty ⇒ faculty record. Accounts without a row get no data |
 | `private.kpi_target_baseline` | same columns as `kpi_targets` | Seeded copy used by **Restore defaults** |
 
 ## Analytics layer
@@ -108,7 +109,7 @@ have no privileges on the views.
 
 All of them take `p_academic_year_id`, `p_semester_id`, `p_college_id` and
 `p_department_id`, where NULL means "all". Each one starts with
-`private.authorize_scope()`, which raises **42501** unless the caller is an authorized academic administrator.
+`private.authorize_scope()`, which resolves the caller's role scope and raises **42501** for requests outside it.
 
 | Function | Returns |
 |---|---|
@@ -117,7 +118,8 @@ All of them take `p_academic_year_id`, `p_semester_id`, `p_college_id` and
 | `get_department_kpis` | Department × KPI with per-department status |
 | `get_sete_criteria` | Mean per criterion for the scope vs. the institution; small-n suppression |
 | `get_grade_distribution` | Grade bands (1.00–1.50 … DRP) with counts and percentages |
-| `get_faculty_performance` | Faculty-level SETE results (pseudonymised), with small-sample suppression |
+| `get_faculty_performance` | Faculty-level SETE results within scope (a faculty member gets only their own row), with small-sample suppression |
+| `get_class_results` | Per-class results for a faculty member (own classes) or program chair (own program) |
 | `reset_kpi_targets` | Restore seeded targets and settings (academic administrator only) |
 | `app_health` | Callable by `anon` too. Non-confidential counts for `/api/health` |
 
@@ -142,6 +144,7 @@ produces identical data.
 | Academic years / terms | 4 / 8 |
 | Courses | 560 |
 | Faculty / students | 145 / 5,149 |
+| KPI definitions | 6 (five per dashboard; on-time grade submission replaces faculty-meeting-standard for faculty members) |
 | Class sections | 3,230 |
 | Enrolments (final grades) | 107,840 |
 | SETE evaluation forms / criterion scores | 88,512 / 354,048 |

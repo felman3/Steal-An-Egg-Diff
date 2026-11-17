@@ -1,12 +1,16 @@
-import { BadgeCheck, ChartLine, Eye, EyeOff, GraduationCap, KeyRound, LoaderCircle, LogIn, ShieldCheck } from 'lucide-react';
+import { BadgeCheck, Building2, ChartLine, Eye, EyeOff, GraduationCap, KeyRound, LoaderCircle, LogIn, ShieldCheck, UserRound } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
 import { PrototypeNotice } from '../components/PrototypeNotice';
 import { demoPassword, supabaseConfigured } from '../lib/supabase';
 
-const ADMIN_DEMO = 'demo.academic.admin@example.com';
-const UNAUTHORIZED_DEMO = 'demo.unauthorized@example.com';
+const DEMO_ACCOUNTS = [
+  { key: 'admin', email: 'admin@example.com', role: 'Academic Administrator', scope: 'Whole university · sets targets and thresholds', icon: ShieldCheck },
+  { key: 'dean', email: 'dean@example.com', role: 'Dean', scope: 'College of Informatics and Computing Sciences (CICS)', icon: Building2 },
+  { key: 'chair', email: 'chair@example.com', role: 'Program Chair', scope: 'BS Information Technology program', icon: GraduationCap },
+  { key: 'faculty', email: 'faculty@example.com', role: 'Faculty Member', scope: 'Own classes and SETE results only', icon: UserRound },
+] as const;
 
 export function LoginPage() {
   const { status, signIn } = useAuth();
@@ -62,7 +66,7 @@ export function LoginPage() {
             </div>
           </div>
           <h1 className="mt-8 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-            Decision support for the authorized academic administrator.
+            Decision support for administrators, deans, program chairs and faculty.
           </h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-2">
             One dashboard that combines Student and Faculty Portal records (enrolment and final grades) with SETE — the Student Evaluation
@@ -74,7 +78,7 @@ export function LoginPage() {
               <ChartLine size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Trends, department comparisons and SETE criteria
             </li>
             <li className="flex gap-2">
-              <ShieldCheck size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Only authorized academic administrators can see data
+              <ShieldCheck size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Each user sees only the data their role allows
             </li>
             <li className="flex gap-2">
               <BadgeCheck size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Warning and critical indicators from stored thresholds
@@ -94,7 +98,7 @@ export function LoginPage() {
         <section className="order-1 lg:order-2">
           <div className="card p-5 shadow-sm sm:p-7">
             <h2 className="text-xl font-semibold text-ink">Sign in</h2>
-            <p className="mt-1 text-sm text-ink-2">Access is limited to authorized academic administrators.</p>
+            <p className="mt-1 text-sm text-ink-2">Use your dashboard account, or pick a demonstration account below.</p>
 
             {!supabaseConfigured && (
               <p role="alert" className="mt-4 rounded-lg bg-critical-bg px-3 py-2 text-sm text-ink">
@@ -150,50 +154,45 @@ export function LoginPage() {
                   <h3 className="text-sm font-semibold text-ink">Demonstration access</h3>
                   <span className="rounded-full bg-warning-bg px-2 py-0.5 text-[11px] font-semibold text-ink">Synthetic data only</span>
                 </div>
-                <button
-                  type="button"
-                  disabled={busy !== null}
-                  onClick={() => {
-                    setEmail(ADMIN_DEMO);
-                    setPassword(demoPassword);
-                    void attempt(ADMIN_DEMO, demoPassword, ADMIN_DEMO);
-                  }}
-                  className="mt-3 flex w-full items-center gap-3 rounded-xl border-2 border-accent bg-accent-soft px-3 py-3 text-left transition-colors hover:bg-sunken disabled:opacity-60"
-                  data-testid="demo-admin"
-                >
-                  <ShieldCheck size={20} className="shrink-0 text-accent" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-ink">Sign in as the Academic Administrator</span>
-                    <span className="block truncate text-xs text-ink-2">Primary user · all colleges · targets, alerts and faculty SETE results</span>
-                    <span className="block truncate font-mono text-[11px] text-ink-muted">{ADMIN_DEMO}</span>
-                  </span>
-                  {busy === ADMIN_DEMO ? (
-                    <LoaderCircle size={16} className="animate-spin text-ink-2" aria-label="Signing in" />
-                  ) : (
-                    <LogIn size={16} className="text-ink-2" aria-hidden />
-                  )}
-                </button>
-                <p className="mt-3 text-xs leading-relaxed text-ink-2">
-                  Password: <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px] text-ink">{demoPassword}</code>. Demo credentials
-                  cannot be changed and public sign-up is disabled.
+                <p className="mt-1 text-xs leading-relaxed text-ink-2">
+                  One account per user type. Password for all:{' '}
+                  <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px] text-ink">{demoPassword}</code>
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-ink-2">
-                  <strong className="text-ink">Access-control check:</strong> the{' '}
-                  <button
-                    type="button"
-                    className="font-medium text-accent underline-offset-2 hover:underline disabled:opacity-60"
-                    disabled={busy !== null}
-                    onClick={() => {
-                      setEmail(UNAUTHORIZED_DEMO);
-                      setPassword(demoPassword);
-                      void attempt(UNAUTHORIZED_DEMO, demoPassword, UNAUTHORIZED_DEMO);
-                    }}
-                    data-testid="demo-unauthorized"
-                  >
-                    unauthorized test account
-                  </button>{' '}
-                  can sign in but is not an academic administrator, so it is denied all data.
-                </p>
+                <ul className="mt-3 space-y-2">
+                  {DEMO_ACCOUNTS.map((a) => {
+                    const Icon = a.icon;
+                    return (
+                      <li key={a.key}>
+                        <button
+                          type="button"
+                          disabled={busy !== null}
+                          onClick={() => {
+                            setEmail(a.email);
+                            setPassword(demoPassword);
+                            void attempt(a.email, demoPassword, a.email);
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl border border-line px-3 py-2.5 text-left transition-colors hover:border-accent hover:bg-accent-soft disabled:opacity-60"
+                          data-testid={`demo-${a.key}`}
+                        >
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                            <Icon size={18} aria-hidden />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold text-ink">{a.role}</span>
+                            <span className="block truncate text-xs text-ink-2">{a.scope}</span>
+                            <span className="block truncate font-mono text-[11px] text-ink-muted">{a.email}</span>
+                          </span>
+                          {busy === a.email ? (
+                            <LoaderCircle size={16} className="animate-spin text-ink-2" aria-label="Signing in" />
+                          ) : (
+                            <LogIn size={16} className="text-ink-2" aria-hidden />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-3 text-xs leading-relaxed text-ink-muted">Demo credentials cannot be changed, and public sign-up is disabled.</p>
               </div>
             )}
             {waiting && <p className="sr-only" role="status">Signing in…</p>}

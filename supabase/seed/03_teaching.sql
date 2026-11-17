@@ -36,7 +36,13 @@ select s.term_id,
        s.course_id,
        fac.id,
        s.section_code,
-       s.grade_deadline + (floor(private.seed_rand('gsub:' || s.term_id || ':' || s.course_id || ':' || s.section_code) * 18)::int - 10)
+       -- Most grades arrive up to 9 days early; each faculty member has their own tendency to be late.
+       s.grade_deadline + case
+         when private.seed_rand('glate:' || s.term_id || ':' || s.course_id || ':' || s.section_code)
+              < 0.02 + 0.22 * power(private.seed_rand('latefac:' || fac.id), 2)
+         then 1 + floor(private.seed_rand('gsub:' || s.term_id || ':' || s.course_id || ':' || s.section_code) * 6)::int
+         else -floor(private.seed_rand('gsub:' || s.term_id || ':' || s.course_id || ':' || s.section_code) * 10)::int
+       end
 from sections s
 join fac on fac.department_id = s.department_id
         and fac.idx = (s.rn + s.term_id * 3) % fac.n;

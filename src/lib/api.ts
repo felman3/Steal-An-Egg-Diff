@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { toAppError } from './errors';
 import type {
   AcademicYear,
+  ClassResultRow,
   AnalyticsSetting,
   AuditRow,
   College,
@@ -90,6 +91,17 @@ export async function fetchFacultyPerformance(f: Filters): Promise<FacultyRow[]>
     target: num(r.target) ?? 0,
     warning_threshold: num(r.warning_threshold) ?? 0,
     critical_threshold: num(r.critical_threshold) ?? 0,
+  }));
+}
+
+export async function fetchClassResults(f: Filters): Promise<ClassResultRow[]> {
+  const rows = await rpc<ClassResultRow>('get_class_results', scopeArgs(f));
+  return rows.map((r) => ({
+    ...r,
+    response_rate: num(r.response_rate),
+    mean_rating: num(r.mean_rating),
+    pass_rate: num(r.pass_rate),
+    mean_grade: num(r.mean_grade),
   }));
 }
 

@@ -100,15 +100,16 @@ export function ChartCard({
   );
 }
 
-export function DataTable({ spec, maxHeight }: { spec: TableSpec; maxHeight?: number }) {
+/** `dense` fits more columns into a narrow card (smaller text, wrapping headers). */
+export function DataTable({ spec, maxHeight, dense = false }: { spec: TableSpec; maxHeight?: number; dense?: boolean }) {
   return (
     <div className="relative overflow-x-auto rounded-lg border border-line" style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}>
-      <table className="w-full border-collapse text-sm">
+      <table className={`w-full border-collapse ${dense ? 'text-xs' : 'text-sm'}`}>
         <caption className="sr-only">{spec.caption}</caption>
         <thead className="sticky top-0 bg-sunken text-left text-xs text-ink-2">
           <tr>
             {spec.columns.map((c) => (
-              <th key={c.key} scope="col" className={`whitespace-nowrap px-3 py-2 font-semibold ${c.align === 'right' ? 'text-right' : ''}`}>
+              <th key={c.key} scope="col" className={`${dense ? 'px-2 py-1.5 align-bottom leading-tight' : 'whitespace-nowrap px-3 py-2'} font-semibold ${c.align === 'right' ? 'text-right' : ''}`}>
                 {c.label}
               </th>
             ))}
@@ -118,7 +119,7 @@ export function DataTable({ spec, maxHeight }: { spec: TableSpec; maxHeight?: nu
           {spec.rows.map((row, i) => (
             <tr key={i} className="border-t border-line">
               {spec.columns.map((c) => (
-                <td key={c.key} className={`whitespace-nowrap px-3 py-2 ${c.align === 'right' ? 'text-right' : ''}`}>
+                <td key={c.key} className={`whitespace-nowrap ${dense ? 'px-2 py-1.5' : 'px-3 py-2'} ${c.align === 'right' ? 'text-right' : ''}`}>
                   {row[c.key]}
                 </td>
               ))}

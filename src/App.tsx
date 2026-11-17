@@ -4,7 +4,7 @@ import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider, useLocatio
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { AppShell } from './components/AppShell';
 import { PrototypeNotice } from './components/PrototypeNotice';
-import { ErrorState, LoadingState } from './components/States';
+import { ErrorState, LoadingState, RestrictedState } from './components/States';
 import { FiltersProvider } from './filters/FiltersProvider';
 import { LoginPage } from './pages/LoginPage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -50,8 +50,9 @@ function RequireAuth() {
           <ShieldAlert className="mx-auto text-critical" size={28} aria-hidden />
           <h1 className="mt-3 text-lg font-semibold text-ink">Access denied</h1>
           <p className="mt-2 text-sm text-ink-2">
-            This dashboard is restricted to <strong className="text-ink">authorized academic administrators</strong>. Your account signed in
-            successfully, but it is not authorized, so the database returns no student, grade or SETE data to it.
+            This dashboard is restricted to <strong className="text-ink">authorized users</strong> (academic administrators, deans, program
+            chairs and faculty members). Your account signed in successfully, but it has no dashboard role, so the database returns no
+            student, grade or SETE data to it.
           </p>
           <button type="button" className="btn btn-ghost mt-5" onClick={() => void signOut()}>
             <LogOut size={15} aria-hidden /> Sign out
@@ -65,6 +66,22 @@ function RequireAuth() {
       <Outlet />
     </FiltersProvider>
   );
+}
+
+/** Pages about other people's results: not for faculty members (the database refuses them too). */
+function StaffOnly({ children }: { children: ReactNode }) {
+  const { profile } = useAuth();
+  if (profile?.role === 'faculty') {
+    return (
+      <div className="card">
+        <RestrictedState
+          minHeight={320}
+          message="This page shows results for other faculty members and whole departments. As a faculty member you can see your own classes and SETE results on your dashboard."
+        />
+      </div>
+    );
+  }
+  return <>{children}</>;
 }
 
 function PageFallback() {
@@ -95,8 +112,8 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { index: true, element: <OverviewPage /> },
-          { path: 'departments', element: lazyPage(<DepartmentsPage />) },
-          { path: 'faculty', element: lazyPage(<FacultyPage />) },
+          { path: 'departments', element: <StaffOnly>{lazyPage(<DepartmentsPage />)}</StaffOnly> },
+          { path: 'faculty', element: <StaffOnly>{lazyPage(<FacultyPage />)}</StaffOnly> },
           { path: 'targets', element: lazyPage(<TargetsPage />) },
           { path: 'about', element: lazyPage(<AboutPage />) },
           { path: '*', element: <NotFound /> },

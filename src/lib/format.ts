@@ -44,6 +44,9 @@ export const STATUS_RANK: Record<KpiStatus, number> = {
 
 export const ROLE_LABEL = {
   admin: 'Academic Administrator',
+  dean: 'Dean',
+  chair: 'Program Chair',
+  faculty: 'Faculty Member',
 } as const;
 
 /** Short x-axis label: "1st Sem 2022-2023" -> "1S '22". */

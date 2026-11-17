@@ -10,8 +10,8 @@
 | | |
 |---|---|
 | **App name** | Academic Quality Dashboard — SETE & Academic Performance Analytics |
-| **Primary user** | **Authorized Academic Administrator** (e.g. Office of the Vice President for Academic Affairs / quality-assurance office) |
-| **Live dashboard** | https://sete-analytics-dashboard.vercel.app (demo sign-in: `demo.academic.admin@example.com` / `Demo-SETE-2026`) |
+| **Users** | Authorized Academic Administrator, Dean, Program Chair and Faculty Member, each with their own dashboard. The labelled mockup below is the **Authorized Academic Administrator** dashboard |
+| **Live dashboard** | https://sete-analytics-dashboard.vercel.app (demo sign-in: `admin@example.com`, `dean@example.com`, `chair@example.com` or `faculty@example.com`; password `password`) |
 | **Repository** | https://github.com/felman3/Steal-An-Egg-Diff |
 
 ---
@@ -85,6 +85,10 @@ much SETE results can be trusted). All targets are **stored in the database** (`
 | **4. Mean General Weighted Average** *(academic operations)* | Track overall academic achievement (1.00 is best) | Σ(final grade × units) ÷ Σ units, graded enrolments | **≤ 2.00** (College of Health Sciences **≤ 2.20**) | *Warning:* review grading consistency and student support. *Critical:* program-level learning-support and readiness review |
 | **5. Faculty Meeting SETE Standard** *(teaching effectiveness)* | Share of faculty meeting the institutional teaching standard, for development planning | faculty with mean rating ≥ 4.00 ÷ faculty with ≥ 5 responses × 100 | **≥ 90%** | *Warning:* faculty-development program on the weakest criterion; mentoring pairs. *Critical:* college-wide teaching-improvement plan using SETE plus peer observation and portfolios |
 
+On the **Faculty Member** dashboard, KPI 5 is replaced by **On-time Grade Submission** (sections with grades submitted by the
+deadline ÷ sections handled × 100; target ≥ 95%, warning below 85%, critical below 75%), because "share of faculty meeting the
+standard" only makes sense for a group.
+
 ### Relevance to university objectives
 - **Mean SETE rating** and **faculty meeting standard** support the objective of **quality instruction** and guide faculty development.
 - **Response rate** protects the **validity** of SETE: decisions should not rest on results from a few students.
@@ -141,6 +145,22 @@ Supporting pages: **Department scorecard** (all KPIs × departments, grade distr
 watchlist with the responsible-use notice), **Targets & thresholds** (edit targets, college overrides, restore defaults, audit trail),
 **About the data** (KPI definitions, objectives, actions, access rules).
 
+### The same dashboard for the other three users
+
+The layout and design stay the same; the database limits the data to the user's scope and the page swaps in the views that fit them.
+
+| Component | Dean | Program Chair | Faculty Member |
+|---|---|---|---|
+| Scope | Own college (college filter locked) | Own program (college and department locked) | Own classes only |
+| Five KPI cards | Same five, for the college | Same five, for the program | My SETE rating · my response rate · my pass rate · my class GWA · **on-time grade submission** |
+| Comparison chart | Departments of the college, plus a mini scorecard of all KPIs | **SETE rating by faculty member** | **SETE rating by class**, with class details (students, response, pass rate, grades on time) |
+| SETE criteria radar | College vs institution | Program vs institution | Mine vs my department |
+| Donut | College faculty by SETE rating | Program faculty by SETE rating | My grade distribution |
+| Alerts | College KPIs, departments, and faculty in the critical zone | Program KPIs and every flagged faculty member | Own KPIs with a suggested next step |
+| Targets & thresholds | Read-only | Read-only | Read-only |
+
+Screenshots: [Dean](screenshots/dashboard-dean.png) · [Program Chair](screenshots/dashboard-chair.png) · [Faculty Member](screenshots/dashboard-faculty.png).
+
 ### Guide questions
 - **What appears first?** The five KPI cards with their status, directly under the filters, then the alerts. The administrator sees
   "how are we doing, and where is the problem" before any detail.
@@ -151,8 +171,8 @@ watchlist with the responsible-use notice), **Targets & thresholds** (edit targe
   the criteria chart shows *which teaching dimension* to develop; the faculty watchlist lists faculty below threshold, for development
   planning only.
 - **Protecting confidential data:**
-  - Only accounts with an **academic-administrator profile** can read anything. Every other signed-in account sees *Access denied* and the
-    database returns 0 rows / error 42501.
+  - Each user reads only their own scope: the administrator everything, a dean their college, a program chair their program, a
+    faculty member only their own classes and SETE result. Requests outside the scope get error 42501; accounts with no role get nothing.
   - Row-Level Security on every table plus an authorization check in every analytics function.
   - SETE forms store **no student identifier**; averages from fewer than 5 responses are **suppressed**; faculty are **pseudonymised**
     in this prototype.
@@ -217,8 +237,8 @@ retention); they may only prompt a human review that uses multiple sources of ev
 ### Three types of testing before implementation (and what this prototype already does)
 | Testing | Purpose | In this prototype |
 |---|---|---|
-| **Functional / end-to-end testing** | KPIs, filters, charts, alerts and drill-down work correctly | 12 automated Playwright browser tests |
-| **Security and access-control testing** | Only authorized academic administrators can read confidential data | 31 automated checks against the live API (`npm run test:security`) |
+| **Functional / end-to-end testing** | KPIs, filters, charts, alerts and drill-down work correctly for every role | 16 automated Playwright browser tests |
+| **Security and access-control testing** | Each role can read only its own scope of confidential data | 56 automated checks against the live API (`npm run test:security`) |
 | **Usability / user-acceptance testing** | Academic administrators can find concerns quickly and understand the charts | To be done with actual administrators (task-based sessions) |
 
 Performance testing with realistic data volumes and data-validation testing (KPI values recomputed by hand) are also recommended.
@@ -227,7 +247,7 @@ Performance testing with realistic data volumes and data-validation testing (KPI
 - **Data Privacy Act of 2012 (RA 10173):** lawful purpose, data minimisation, access control, retention limits, and a privacy impact
   assessment before using real data.
 - **Student anonymity in SETE:** no student identifiers, suppression of small groups.
-- **Faculty confidentiality:** faculty-level results visible only to authorized administrators; every target change audited.
+- **Faculty confidentiality:** a faculty member sees only their own results; chairs, deans and the administrator see results only within their scope; every target change is audited.
 - **Fairness:** account for course context and response rates; check models for bias across groups.
 - **Security:** least-privilege accounts, no public sign-up, encrypted connections, audit trails.
 
