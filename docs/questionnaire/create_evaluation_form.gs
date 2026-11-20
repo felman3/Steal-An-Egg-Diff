@@ -2,43 +2,48 @@
  * BAT 405 – Analytics Application
  * Interactive Analytics Dashboard Evaluation Questionnaire → Google Form
  *
- * HOW TO USE (about 2 minutes):
- *   1. Go to https://script.google.com → New project.
- *   2. Delete the sample code, paste this whole file, then edit the SETTINGS below
- *      (at least GROUP_NAME).
- *   3. Choose the function `createEvaluationForm` and click Run.
- *      Approve the permission prompt (it only creates a Form and a Sheet in your Drive).
- *   4. Open View → Execution log: it prints the form's edit link, the link to share
- *      with respondents, and the response spreadsheet link.
+ * HOW TO USE:
+ *   1. Open https://script.google.com → New project (or your existing project).
+ *   2. Replace all the code with this file and edit SETTINGS below (app name, group members, section).
+ *   3. Save (Ctrl+S). In the toolbar choose ONE function and click Run:
+ *        • updateExistingForm   → rebuilds the form in SETTINGS.FORM_ID in place (same link)
+ *        • createEvaluationForm → makes a brand-new form
+ *      Approve the permission prompt (Advanced → Go to project → Allow).
+ *   4. Open the Execution log for the edit link, the link to share and the response sheet.
+ *   5. Header banner: Forms → 🎨 Customize theme → Header → Upload, and choose
+ *      form-header-placeholder.png (or your own design). A script cannot set the header image.
  *
- * What it builds (from BAT405_Analytics_Dashboard_Evaluation_Questionnaire_Revised.pdf):
- *   • Data-privacy consent (RA 10173): "I agree" continues; "I do not agree" ends the form at once
- *   • Respondent information: Name (Last name, First name M.I.), SR-Code, Section
- *   • Dashboard details and whether a live demonstration was observed
- *   • Sections A–F: 4 statements each, rated 5 / 4 / 3 / 2 / 1 / N/A (one answer per row required)
- *   • Four open-ended questions
- *   • A linked Google Sheet with a "Summary" tab that computes item, domain and overall means
- *     from valid ratings only (N/A is excluded from the denominator, never counted as zero),
- *     as the questionnaire's scoring note requires.
+ * FORM LAYOUT (every question is required):
+ *   Title + greeting letter + email collection
+ *   I.   Data Privacy Notice and Consent  — "No" ends the form; nothing else is collected
+ *   II.  Respondent Information           — Name (Cruz, Juan R.), SR-Code, Section (dropdown)
+ *   III. Dashboard Evaluation             — sections A–F on ONE page, rated 5 / 4 / 3 / 2 / 1 / N/A
+ *   IV.  Open-Ended Evaluation            — four questions
+ *   V.   Thank You
+ * The linked Google Sheet gets a "Summary" tab with item, domain and overall means computed from
+ * valid ratings only (N/A excluded from the denominator, never counted as zero).
  */
 
 // ============================== SETTINGS ==============================
 const SETTINGS = {
-  GROUP_NAME: 'Group __ (edit me)',
-  DASHBOARD_NAME: 'Academic Quality Dashboard — SETE & Academic Performance Analytics',
+  FORM_ID: '1VDVwI6FnyCcdIkiwUszxVLZDK48vf55vs6y28zb-Lng', // used by updateExistingForm()
+  APP_NAME: 'Academic Quality Dashboard', // change once your group picks the app name
+  GROUP_SECTION: 'BSIT BA - 41__', // your group's section
+  GROUP_MEMBERS: ['Last name, First name M.I.', 'Last name, First name M.I.'], // signatories of the greeting
   DASHBOARD_URL: 'https://sete-analytics-dashboard.vercel.app',
   PRIMARY_USER: 'Authorized Academic Administrator',
   DEMO_LOGIN: 'demo.academic.admin@example.com',
   DEMO_PASSWORD: 'Demo-SETE-2026',
   SECTIONS: ['BSIT BA - 4101', 'BSIT BA - 4103'],
-  // Requires respondents to sign in with Google; prevents duplicate responses.
-  ONE_RESPONSE_PER_PERSON: true,
-  COLLECT_EMAIL: true,
+  ONE_RESPONSE_PER_PERSON: true, // respondents must sign in with Google; prevents duplicates
 };
 // =====================================================================
 
 const RATING_COLUMNS = ['5', '4', '3', '2', '1', 'N/A'];
 const SCALE_TEXT = '5 = Strongly Agree · 4 = Agree · 3 = Neutral · 2 = Disagree · 1 = Strongly Disagree · N/A = Not Assessable';
+const CONSENT_TITLE = 'Do you agree to the collection and processing of your personal information as described above?';
+const CONSENT_YES = 'Yes, I have read and understood the Data Privacy Notice, and I voluntarily give my consent.';
+const CONSENT_NO = 'No, I do not agree to the collection and processing of my personal information. (The form will end here.)';
 
 const DOMAINS = [
   {
@@ -116,64 +121,102 @@ function rowLabel_(domain, index, text) {
   return domain.code + (index + 1) + '. ' + text;
 }
 
-function createEvaluationForm() {
-  const title = 'BAT 405 – Interactive Analytics Dashboard Evaluation Questionnaire';
-  const form = FormApp.create(title);
+function formTitle_() {
+  return SETTINGS.APP_NAME + ' Evaluation';
+}
 
+/** Rebuilds the form in SETTINGS.FORM_ID in place, so its link stays the same. */
+function updateExistingForm() {
+  const form = FormApp.openById(SETTINGS.FORM_ID);
+  if (form.getResponses().length > 0) {
+    Logger.log('Note: this form already has ' + form.getResponses().length + ' response(s). Rebuilding replaces the questions; ' +
+      'old answers stay in the response sheet but no longer match the new questions. Delete test responses first if needed.');
+  }
+  form.getItems().forEach(function (item) { form.deleteItem(item); });
+  buildForm_(form);
+  linkSheetAndSummary_(form);
+}
+
+/** Creates a brand-new form (and response sheet). */
+function createEvaluationForm() {
+  const form = FormApp.create(formTitle_());
+  buildForm_(form);
+  linkSheetAndSummary_(form);
+}
+
+function buildForm_(form) {
+  const members = SETTINGS.GROUP_MEMBERS.join('\n');
+
+  // ---- Title + greeting -------------------------------------------------------
   form
+    .setTitle(formTitle_())
     .setDescription(
-      'Case Study: Enhancing the University Student and Faculty Portal Through Analytics and Decision Support\n\n' +
-        'Purpose: Assess the clarity, usefulness, presentation, interactivity, and responsible design of the analytics dashboard ' +
-        'developed for the Student and Faculty Portal and Student Evaluation of Teaching Effectiveness (SETE).\n\n' +
-        'Dashboard / Group: ' + SETTINGS.GROUP_NAME + '\n' +
-        'Primary dashboard user: ' + SETTINGS.PRIMARY_USER + '\n\n' +
-        'Instructions: Review the dashboard and observe its demonstration when available. Indicate how much you agree with each ' +
-        'statement. Select N/A if a feature cannot be assessed. Do not assume that a proposed feature is functional unless demonstrated.\n\n' +
-        SCALE_TEXT
+      'Greetings, Respondent!\n\n' +
+        'We are students from ' + SETTINGS.GROUP_SECTION + ', and we would like to invite you to take part in the evaluation of the ' +
+        SETTINGS.APP_NAME + ', the analytics dashboard we developed for our BAT 405 – Analytics Application case study, ' +
+        '"Enhancing the University Student and Faculty Portal Through Analytics and Decision Support."\n\n' +
+        'The dashboard brings together Student and Faculty Portal data and SETE (Student Evaluation of Teaching Effectiveness) ' +
+        'results to help the ' + SETTINGS.PRIMARY_USER + ' monitor academic performance and teaching effectiveness. This ' +
+        'evaluation aims to gather your feedback on its clarity, usefulness, design, interactivity and responsible use of data.\n\n' +
+        'Please answer each question honestly based on your own review of the dashboard. Your feedback will help us improve our ' +
+        'project. Thank you for your time and participation!\n\n' +
+        'Respectfully,\n' + members + '\n' + SETTINGS.GROUP_SECTION
     )
     .setProgressBar(true)
     .setAllowResponseEdits(false)
     .setShowLinkToRespondAgain(false)
-    .setConfirmationMessage('Thank you! Your evaluation of the dashboard has been recorded.');
-  if (SETTINGS.COLLECT_EMAIL) form.setCollectEmail(true);
+    .setConfirmationMessage(
+      'Thank you! Your evaluation of the ' + SETTINGS.APP_NAME + ' has been recorded. We appreciate your time and feedback.'
+    );
+  try {
+    form.setEmailCollectionType(FormApp.EmailCollectionType.VERIFIED); // signed-in Google account email
+  } catch (e) {
+    form.setCollectEmail(true); // older Apps Script runtimes
+  }
   if (SETTINGS.ONE_RESPONSE_PER_PERSON) form.setLimitOneResponsePerUser(true);
 
-  // ---- Data privacy consent (gate) -----------------------------------------------
-  // "I agree" continues to the questionnaire; "I do not agree" submits the form right
-  // away, so no name, SR-Code or answers are ever collected from someone who declines.
+  // ---- I. Data Privacy Notice and Consent (first page) ----------------------------
+  form
+    .addSectionHeaderItem()
+    .setTitle('I. Data Privacy Notice and Consent')
+    .setHelpText(
+      'DATA PRIVACY NOTICE\n\n' +
+        'In accordance with Republic Act No. 10173, also known as the Data Privacy Act of 2012, we respect your privacy and are ' +
+        'committed to protecting the personal information you provide.\n\n' +
+        'The information collected through this form (your email, name, SR-Code, section and answers) will be used only for the ' +
+        'evaluation of the ' + SETTINGS.APP_NAME + ', including the analysis of responses and the documentation of our academic ' +
+        'project requirements.\n\n' +
+        'All information will be treated as confidential and will be accessed only by the members of our project team and our ' +
+        'instructor. Results will be reported only as summaries, never as individual answers with your name, and responses will ' +
+        'be deleted once the course requirement is completed.\n\n' +
+        'Participation is voluntary. By choosing "Yes", you confirm that you have read and understood this notice and give your ' +
+        'consent to the collection and processing of your personal information for the purposes stated above. Choosing "No" ends ' +
+        'the form immediately and nothing else is collected.'
+    );
+
   const consent = form.addMultipleChoiceItem();
   consent
-    .setTitle('Data Privacy Consent')
-    .setHelpText(
-      'DATA PRIVACY NOTICE\n' +
-        'In compliance with the Data Privacy Act of 2012 (Republic Act No. 10173), we will collect your name, SR-Code, section and ' +
-        'answers only to evaluate our BAT 405 analytics dashboard project.\n\n' +
-        '• Your information will be used for academic purposes only and will not be shared outside the class and instructor.\n' +
-        '• Results are reported only as summaries (averages), never as individual answers with your name.\n' +
-        '• Responses will be kept securely and deleted after the course requirement is completed.\n' +
-        '• Participation is voluntary. If you do not agree, select "I do not agree" and the form will end; nothing else will be asked.\n\n' +
-        'Do you agree to take part in this evaluation?'
-    )
+    .setTitle(CONSENT_TITLE)
     .setChoices([
-      consent.createChoice(
-        'I agree. I have read the data privacy notice and voluntarily allow the use of my information for this evaluation.',
-        FormApp.PageNavigationType.CONTINUE
-      ),
-      consent.createChoice('I do not agree. (The form will end here.)', FormApp.PageNavigationType.SUBMIT),
+      consent.createChoice(CONSENT_YES, FormApp.PageNavigationType.CONTINUE),
+      consent.createChoice(CONSENT_NO, FormApp.PageNavigationType.SUBMIT),
     ])
     .setRequired(true);
 
-  // ---- Respondent information --------------------------------------------------
-  form.addPageBreakItem().setTitle('Respondent Information').setHelpText('Please type your details exactly in the formats shown.');
+  // ---- II. Respondent Information ---------------------------------------------
+  form
+    .addPageBreakItem()
+    .setTitle('II. Respondent Information')
+    .setHelpText('Please provide the following information before proceeding with the ' + SETTINGS.APP_NAME + ' evaluation.');
 
   form
     .addTextItem()
-    .setTitle('Name (Last name, First name M.I.)')
-    .setHelpText('Format: Last name, First name M.I.   Example: Dela Cruz, Juan A.   (Leave out the M.I. if you have no middle name.)')
+    .setTitle('Please enter your complete name (Last name, First name M.I.)')
+    .setHelpText('Example: Cruz, Juan R.')
     .setRequired(true)
     .setValidation(
       FormApp.createTextValidation()
-        .setHelpText('Use the format: Last name, First name M.I. — e.g. Dela Cruz, Juan A.')
+        .setHelpText('Please follow the format: Last name, First name M.I. — e.g. Cruz, Juan R.')
         .requireTextMatchesPattern("^[A-Za-zÀ-ÿÑñ][A-Za-zÀ-ÿÑñ' .-]*, [A-Za-zÀ-ÿÑñ][A-Za-zÀ-ÿÑñ' .-]*?( [A-Za-zÑñ]{1,2}\\.)?$")
         .build()
     );
@@ -181,75 +224,95 @@ function createEvaluationForm() {
   form
     .addTextItem()
     .setTitle('SR-Code')
-    .setHelpText('Format: 00-00000   Example: 23-12345')
+    .setHelpText('Example: 23-12345')
     .setRequired(true)
     .setValidation(
-      FormApp.createTextValidation().setHelpText('Enter your SR-Code like 23-12345 (2 digits, a dash, 5 digits).').requireTextMatchesPattern('^[0-9]{2}-[0-9]{5}$').build()
+      FormApp.createTextValidation()
+        .setHelpText('Please enter your SR-Code like 23-12345 (2 digits, a dash, 5 digits).')
+        .requireTextMatchesPattern('^[0-9]{2}-[0-9]{5}$')
+        .build()
     );
 
-  form.addMultipleChoiceItem().setTitle('Section').setChoiceValues(SETTINGS.SECTIONS).setRequired(true);
+  form.addListItem().setTitle('Section').setChoiceValues(SETTINGS.SECTIONS).setRequired(true);
 
-  // ---- Dashboard details -------------------------------------------------------
+  // ---- III. Dashboard Evaluation (all Likert items on one page) ------------------
   form
     .addPageBreakItem()
-    .setTitle('Dashboard Being Evaluated')
+    .setTitle('III. Dashboard Evaluation')
     .setHelpText(
-      SETTINGS.DASHBOARD_NAME + '\n' +
-        'Group: ' + SETTINGS.GROUP_NAME + '\n' +
+      'Review the ' + SETTINGS.APP_NAME + ' and observe its demonstration when available, then indicate how much you agree with ' +
+        'each statement. Select N/A if a feature cannot be assessed. Do not assume that a proposed feature is functional unless it ' +
+        'was demonstrated.\n\n' +
+        'Dashboard: ' + SETTINGS.DASHBOARD_URL + '\n' +
+        'Demo sign-in: ' + SETTINGS.DEMO_LOGIN + ' / ' + SETTINGS.DEMO_PASSWORD + '\n' +
         'Primary dashboard user: ' + SETTINGS.PRIMARY_USER + '\n' +
-        'Link: ' + SETTINGS.DASHBOARD_URL + '\n' +
-        'Demo sign-in: ' + SETTINGS.DEMO_LOGIN + ' / password ' + SETTINGS.DEMO_PASSWORD + '\n\n' +
-        'All data in the dashboard is synthetic demonstration data. It is an academic prototype, not an official university system.'
+        '(All data in the dashboard is synthetic demonstration data.)\n\n' +
+        SCALE_TEXT
     );
 
-  form
-    .addMultipleChoiceItem()
-    .setTitle('How did you review the dashboard?')
-    .setChoiceValues(['I observed a live demonstration', 'I used the dashboard myself', 'Both', 'I only saw screenshots / a recording'])
-    .setRequired(true);
-
-  // ---- Rating sections A–F -----------------------------------------------------
   DOMAINS.forEach(function (d) {
-    form.addPageBreakItem().setTitle(d.title).setHelpText(SCALE_TEXT + (d.note ? '\n' + d.note : ''));
     form
       .addGridItem()
       .setTitle(d.title)
-      .setHelpText('Choose one rating for each statement.')
+      .setHelpText('Choose one rating for each statement.' + (d.note ? ' ' + d.note : ''))
       .setRows(d.items.map(function (t, i) { return rowLabel_(d, i, t); }))
       .setColumns(RATING_COLUMNS)
       .setRequired(true);
   });
 
-  // ---- Open-ended ------------------------------------------------------------
-  form.addPageBreakItem().setTitle('Open-Ended Evaluation').setHelpText('Answer briefly and specifically.');
+  // ---- IV. Open-Ended Evaluation -------------------------------------------------
+  form.addPageBreakItem().setTitle('IV. Open-Ended Evaluation').setHelpText('Please answer each question briefly and specifically.');
   OPEN_ENDED.forEach(function (q, i) {
     form.addParagraphTextItem().setTitle(i + 1 + '. ' + q).setRequired(true);
   });
 
-  // ---- Response spreadsheet with automatic scoring ----------------------------
-  const ss = SpreadsheetApp.create(title + ' (Responses)');
-  form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
-  SpreadsheetApp.flush();
-  Utilities.sleep(3000);
-  buildSummary_(ss.getId(), title);
-
-  Logger.log('Form created.');
-  Logger.log('Edit the form:          ' + form.getEditUrl());
-  Logger.log('Share with respondents: ' + form.getPublishedUrl());
-  Logger.log('Responses & scoring:    ' + ss.getUrl());
+  // ---- V. Thank You ----------------------------------------------------------
+  form
+    .addPageBreakItem()
+    .setTitle('V. Thank You!')
+    .setHelpText(
+      'Thank you for taking the time to evaluate the ' + SETTINGS.APP_NAME + '. Your responses and suggestions will help us ' +
+        'improve our dashboard and complete our project.\n\nPlease click Submit to record your answers.\n\n' +
+        'Respectfully,\n' + members + '\n' + SETTINGS.GROUP_SECTION
+    );
 }
 
-/** Adds a "Summary" tab computing means from valid ratings (1–5) only; N/A never counts as zero. */
-function buildSummary_(spreadsheetId, title) {
+/** Links (or reuses) the response spreadsheet and (re)builds its Summary tab. */
+function linkSheetAndSummary_(form) {
+  let ssId = null;
+  try {
+    if (form.getDestinationType() === FormApp.DestinationType.SPREADSHEET) ssId = form.getDestinationId();
+  } catch (e) {
+    ssId = null;
+  }
+  if (!ssId) {
+    const ss = SpreadsheetApp.create(formTitle_() + ' (Responses)');
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
+    ssId = ss.getId();
+  }
+  SpreadsheetApp.flush();
+  Utilities.sleep(3000);
+  buildSummary_(ssId);
+
+  Logger.log('Form ready.');
+  Logger.log('Edit the form:          ' + form.getEditUrl());
+  Logger.log('Share with respondents: ' + form.getPublishedUrl());
+  Logger.log('Responses & scoring:    ' + SpreadsheetApp.openById(ssId).getUrl());
+  Logger.log('Next: Customize theme → Header → upload your banner image.');
+}
+
+/** "Summary" tab: means from valid ratings (1–5) only; N/A never counts as zero. */
+function buildSummary_(spreadsheetId) {
   const ss = SpreadsheetApp.openById(spreadsheetId);
-  const responses = ss.getSheets().filter(function (s) { return s.getFormUrl(); })[0];
+  const responseSheets = ss.getSheets().filter(function (s) { return s.getFormUrl(); });
+  const responses = responseSheets[responseSheets.length - 1];
   const r = "'" + (responses ? responses.getName() : 'Form Responses 1') + "'";
-  let summary = ss.getSheetByName('Sheet1') || ss.insertSheet('Summary');
+  const summary = ss.getSheetByName('Summary') || ss.getSheetByName('Sheet1') || ss.insertSheet('Summary');
   summary.setName('Summary');
   ss.setActiveSheet(summary);
   ss.moveActiveSheet(1);
 
-  // Column of one statement, found by its header so the formula survives column moves.
+  // Column of one question, found by its header so the formula survives column moves.
   const col = function (header) {
     return 'INDEX(' + r + '!$A$2:$ZZ,0,MATCH("' + header.replace(/"/g, '""') + '",' + r + '!$1:$1,0))';
   };
@@ -257,32 +320,31 @@ function buildSummary_(spreadsheetId, title) {
     return '=IF(' + cell + '="","",IFS(' + cell + '>=4.21,"Strongly Agree",' + cell + '>=3.41,"Agree",' + cell + '>=2.61,"Neutral",' +
       cell + '>=1.81,"Disagree",TRUE,"Strongly Disagree"))';
   };
+  const consentCol = col(CONSENT_TITLE);
 
   const rows = [];
-  rows.push([title + ' — Summary', '', '', '', '', '', '']);
-  // Respondents who declined the privacy consent submit an empty response; count them separately.
-  const consentCol = col('Data Privacy Consent');
-  rows.push(['Responses (consent given)', '=IFERROR(COUNTIF(' + consentCol + ',"I agree*"),0)', '', '', '', '', '']);
-  rows.push(['Declined consent (no data collected)', '=IFERROR(COUNTIF(' + consentCol + ',"I do not agree*"),0)', '', '', '', '', '']);
+  rows.push([formTitle_() + ' — Summary', '', '', '', '', '', '']);
+  rows.push(['Responses (consent given)', '=IFERROR(COUNTIF(' + consentCol + ',"Yes*"),0)', '', '', '', '', '']);
+  rows.push(['Declined consent (no data collected)', '=IFERROR(COUNTIF(' + consentCol + ',"No*"),0)', '', '', '', '', '']);
   rows.push(['Means use valid ratings (1–5) only. N/A is excluded from the denominator and is never treated as zero.', '', '', '', '', '', '']);
   rows.push(['Item', 'Statement', 'Mean', 'Interpretation', 'Valid ratings (n)', 'Sum of ratings', 'N/A count']);
 
   const domainRows = [];
   DOMAINS.forEach(function (d) {
-    const first = rows.length + 2; // first item row (1-based) after the domain header row
     rows.push([d.title, '', '', '', '', '', '']);
-    const domainRow = rows.length; // 1-based index of the domain header row
+    const domainRow = rows.length; // 1-based row of the domain header
+    const first = domainRow + 1;
     d.items.forEach(function (t, i) {
-      const header = d.title + ' [' + rowLabel_(d, i, t) + ']';
+      const c = col(d.title + ' [' + rowLabel_(d, i, t) + ']');
       const n = rows.length + 1;
       rows.push([
         d.code + (i + 1),
         t,
         '=IF(E' + n + '=0,"",F' + n + '/E' + n + ')',
         interp('C' + n),
-        '=IFERROR(SUMPRODUCT(--ISNUMBER(VALUE(' + col(header) + '))*(' + col(header) + '<>"")),0)',
-        '=IFERROR(SUMPRODUCT(IFERROR(VALUE(' + col(header) + '),0)),0)',
-        '=IFERROR(COUNTIF(' + col(header) + ',"N/A"),0)',
+        '=IFERROR(SUMPRODUCT(--ISNUMBER(VALUE(' + c + '))*(' + c + '<>"")),0)',
+        '=IFERROR(SUMPRODUCT(IFERROR(VALUE(' + c + '),0)),0)',
+        '=IFERROR(COUNTIF(' + c + ',"N/A"),0)',
       ]);
     });
     const last = rows.length;
