@@ -68,7 +68,7 @@ export function AlertsPanel({
     <section className="card flex min-w-0 flex-col p-4 shadow-xs sm:p-5" aria-labelledby="alerts-heading" data-testid="alerts-panel">
       <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 id="alerts-heading" className="flex items-center gap-2 text-[17px] font-semibold text-ink">
+          <h2 id="alerts-heading" className="flex items-center gap-2 text-base font-semibold text-ink">
             <ListChecks size={17} className="text-accent" aria-hidden /> Priority Alerts
           </h2>
         </div>

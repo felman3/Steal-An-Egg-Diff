@@ -57,7 +57,7 @@ export function KpiCard({ kpi, selected, onSelect, def, caution }: Props) {
         <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: STATUS_FILL[kpi.status] }} />
         <span className="min-h-9 pr-6 text-sm font-semibold leading-tight text-ink">{kpi.kpi_name}</span>
         <span className="mt-1.5 flex items-baseline gap-1.5">
-          <span className="tabular text-[clamp(1.75rem,3cqi,2.65rem)] font-semibold leading-none tracking-tight text-ink" data-testid={`kpi-value-${kpi.kpi_code}`}>
+          <span className="tabular text-[clamp(1.625rem,2.85cqi,2.5rem)] font-semibold leading-none tracking-tight text-ink" data-testid={`kpi-value-${kpi.kpi_code}`}>
             {formatValue(kpi.value, kpi.unit, kpi.decimals)}
           </span>
           {kpi.unit === 'rating' && kpi.value !== null && <span className="text-xs text-ink-muted">/ 5</span>}

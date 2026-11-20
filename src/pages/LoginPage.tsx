@@ -1,6 +1,6 @@
-import { ArrowRight, Eye, EyeOff, LoaderCircle, LogIn, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle, LogIn, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
 import { SpectraBrand } from '../components/SpectraBrand';
 import { demoPassword, supabaseConfigured } from '../lib/supabase';
@@ -9,7 +9,7 @@ const ADMIN_DEMO = 'demo.academic.admin@example.com';
 const UNAUTHORIZED_DEMO = 'demo.unauthorized@example.com';
 
 export function LoginPage() {
-  const { status, signIn } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState(demoPassword ? ADMIN_DEMO : '');
@@ -40,7 +40,7 @@ export function LoginPage() {
       <main className="login-shell mx-auto grid w-full max-w-[1120px] lg:grid-cols-[1.08fr_0.92fr]">
         <section className="login-intro relative isolate flex min-w-0 flex-col justify-center overflow-hidden px-5 py-7 sm:px-10 sm:py-10 lg:px-12 lg:py-14">
           <SpectraBrand className="spectra-brand--login" />
-          <h1 className="mt-6 max-w-[16ch] text-[1.75rem] font-bold leading-[1.12] tracking-tight text-balance sm:mt-8 sm:text-[clamp(2.2rem,4vw,3.25rem)]">
+          <h1 className="mt-6 max-w-[16ch] text-[1.625rem] font-bold leading-[1.12] tracking-tight text-balance sm:mt-8 sm:text-[clamp(2.125rem,3.85vw,3.125rem)]">
             Academic Performance and Teaching Evidence
           </h1>
           <p className="mt-4 max-w-[39ch] text-sm leading-relaxed text-blue-100 sm:text-base">
@@ -53,7 +53,7 @@ export function LoginPage() {
 
         <section className="flex min-w-0 items-center bg-surface px-5 py-6 sm:p-10 lg:p-12">
           <div className="mx-auto w-full max-w-md">
-            <h2 className="text-[1.75rem] font-semibold tracking-tight text-ink">Sign In</h2>
+            <h2 className="text-[1.625rem] font-semibold tracking-tight text-ink">Sign In</h2>
             <p className="mt-1 text-sm text-ink-2">Access is limited to authorized academic administrators.</p>
 
             {!supabaseConfigured && (
@@ -103,12 +103,6 @@ export function LoginPage() {
                 {busy === 'form' ? 'Signing in…' : 'Sign in'}
               </button>
             </form>
-            {status === 'ready' && (
-              <Link to="/dashboard" className="mt-3 inline-flex min-h-8 items-center gap-1.5 text-sm font-semibold text-accent hover:underline">
-                Continue to dashboard <ArrowRight size={15} aria-hidden />
-              </Link>
-            )}
-
             {demoPassword && (
               <div className="mt-5 border-t border-line pt-4" data-testid="demo-accounts">
                 <h3 className="text-sm font-semibold text-ink">Demonstration Access</h3>

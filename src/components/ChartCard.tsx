@@ -63,7 +63,7 @@ export function ChartCard({
     <section className={`card flex min-w-0 flex-col p-4 shadow-xs sm:p-5 ${className}`} aria-labelledby={headingId} data-testid={testId}>
       <header className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h2 id={headingId} className="text-[17px] font-semibold leading-snug text-ink">
+          <h2 id={headingId} className="text-base font-semibold leading-snug text-ink">
             {title}
           </h2>
           {subtitle && <p className="mt-1 text-sm leading-snug text-ink-2">{subtitle}</p>}

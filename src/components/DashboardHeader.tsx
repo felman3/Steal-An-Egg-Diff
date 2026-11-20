@@ -50,7 +50,7 @@ export function DashboardHeader({ period, scope }: { period: string; scope: stri
     <header className="space-y-3" data-testid="page-header">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[28px]">Academic Analytics</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[1.625rem]">Academic Analytics</h1>
           <p className="mt-0.5 text-sm text-ink-2">Monitor academic performance and identify teaching improvement priorities.</p>
         </div>
         <p className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink-2">
