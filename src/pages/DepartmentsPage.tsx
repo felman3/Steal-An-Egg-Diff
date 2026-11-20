@@ -1,4 +1,3 @@
-import { PageHeader } from '../components/AppShell';
 import { ChartCard } from '../components/ChartCard';
 import { GradeDistributionChart } from '../components/charts/GradeDistributionChart';
 import { StatusIcon } from '../components/StatusBadge';
@@ -27,7 +26,6 @@ export function DepartmentsPage() {
 
   return (
     <>
-      <PageHeader title="Department scorecard" />
       <section className="card mb-5 p-4 sm:p-5" aria-labelledby="scorecard-heading" data-testid="scorecard">
         <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div>

@@ -1,5 +1,5 @@
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { formatInt, shortTermLabel } from '../../lib/format';
+import { formatInt, KPI_SAMPLE_LABEL, shortTermLabel } from '../../lib/format';
 import type { KpiSummaryRow, TrendRow } from '../../lib/types';
 import { fmt, lineDomain, statusZones, tickFormatter } from './chartUtils';
 import { TooltipBox, TooltipRow } from './ChartTooltip';
@@ -26,6 +26,8 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
 
   const values = data.map((d) => d.value).filter((v): v is number => v !== null);
   const domain = lineDomain(kpi.unit, values, [kpi.target, kpi.warning_threshold, kpi.critical_threshold]);
+  const [scaleMin, scaleMax] = lineDomain(kpi.unit, [], []);
+  const zoomed = domain[0] > scaleMin || domain[1] < scaleMax;
   const zones = statusZones(domain, kpi.warning_threshold, kpi.critical_threshold, kpi.direction);
   const selected = data.filter((d) => d.selected);
   const highlight = selected.length > 0 && selected.length < data.length;
@@ -34,7 +36,8 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
   const summary = `${kpi.kpi_name} by term: ${data.map((d) => `${d.full} ${fmt(d.value, kpi.unit, kpi.decimals)}`).join('; ')}. Target ${fmt(kpi.target, kpi.unit, kpi.decimals)}.`;
 
   return (
-    <div role="img" aria-label={summary} data-testid="trend-chart" className="relative flex-1" style={{ minHeight }}>
+    <div data-testid="trend-chart" className="flex flex-1 flex-col">
+      <div role="img" aria-label={summary} className="relative flex-1" style={{ minHeight }}>
       <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
         <ComposedChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: 0 }}>
           <defs>
@@ -73,7 +76,7 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
                 <TooltipBox title={p.full}>
                   <TooltipRow label={kpi.short_name} value={fmt(p.value, kpi.unit, kpi.decimals)} keyColor="var(--series-1)" />
                   <TooltipRow label="Target" value={fmt(kpi.target, kpi.unit, kpi.decimals)} />
-                  <TooltipRow label="Sample size" value={formatInt(p.n)} />
+                  <TooltipRow label={KPI_SAMPLE_LABEL[kpi.kpi_code]} value={formatInt(p.n)} />
                 </TooltipBox>
               );
             }}
@@ -102,6 +105,18 @@ export function TrendChart({ rows, kpi, minHeight = 250 }: { rows: TrendRow[]; k
           />
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
+      <ul className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2" aria-label="Trend chart legend">
+        <li className="flex items-center gap-1.5"><span className="w-3.5 border-t border-dashed border-ink-2" aria-hidden /> Current target</li>
+        {zones && (
+          <>
+            <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-warning" style={{ background: 'var(--zone-warning)' }} aria-hidden /> Warning zone</li>
+            <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-critical" style={{ background: 'var(--zone-critical)' }} aria-hidden /> Critical zone</li>
+          </>
+        )}
+        {highlight && <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-accent bg-accent-soft" aria-hidden /> Selected period</li>}
+      </ul>
+      {zoomed && <p className="mt-1 text-xs text-ink-2">Zoomed vertical scale. Switch to Table for exact term values.</p>}
     </div>
   );
 }

@@ -135,6 +135,8 @@ export interface FacultyRow {
   criterion_means: Record<string, number> | null;
 }
 
+export type FacultyRatingBandRow = Pick<FacultyRow, 'rating_band'>;
+
 export interface KpiDefinition {
   id: number;
   code: KpiCode;

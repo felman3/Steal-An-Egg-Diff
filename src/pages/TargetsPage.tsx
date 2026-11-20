@@ -1,6 +1,5 @@
 import { History, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { PageHeader } from '../components/AppShell';
 import { ErrorState, LoadingState } from '../components/States';
 import { useFilters } from '../filters/FiltersProvider';
 import {
@@ -300,34 +299,30 @@ export function TargetsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Targets & alert thresholds"
-        description="Stored in the database (kpi_targets). Every KPI status, alert and warning indicator in the dashboard is computed from these values."
-        showFilters={false}
-        actions={
-          isAdmin ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {resetState === 'confirm' ? (
-                <>
-                  <span className="text-sm opacity-90">Restore all seeded targets and settings?</span>
-                  <button type="button" className="btn btn-primary" onClick={() => void reset()}>
-                    Restore
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={() => setResetState('idle')}>
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button type="button" className="btn btn-ghost" onClick={() => setResetState('confirm')} disabled={resetState === 'busy'} data-testid="reset-targets">
-                  <RotateCcw size={15} aria-hidden /> {resetState === 'busy' ? 'Restoring…' : 'Restore defaults'}
+      <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-sm text-ink-2">These settings determine KPI statuses, warning levels and critical alerts.</p>
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-2">
+            {resetState === 'confirm' ? (
+              <>
+                <span className="text-sm opacity-90">Restore all seeded targets and settings?</span>
+                <button type="button" className="btn btn-primary" onClick={() => void reset()}>
+                  Restore
                 </button>
-              )}
-              {resetState === 'done' && <span className="text-sm font-semibold" role="status">Defaults restored</span>}
-              {resetState === 'error' && <span className="rounded bg-critical-bg px-2 py-0.5 text-sm font-semibold" role="alert">{resetError}</span>}
-            </div>
-          ) : undefined
-        }
-      />
+                <button type="button" className="btn btn-ghost" onClick={() => setResetState('idle')}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button type="button" className="btn btn-ghost" onClick={() => setResetState('confirm')} disabled={resetState === 'busy'} data-testid="reset-targets">
+                <RotateCcw size={15} aria-hidden /> {resetState === 'busy' ? 'Restoring…' : 'Restore defaults'}
+              </button>
+            )}
+            {resetState === 'done' && <span className="text-sm font-semibold" role="status">Defaults restored</span>}
+            {resetState === 'error' && <span className="rounded bg-critical-bg px-2 py-0.5 text-sm font-semibold" role="alert">{resetError}</span>}
+          </div>
+        )}
+      </div>
 
 
       {error ? (

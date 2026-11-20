@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 export function TooltipBox({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
-    <div className="min-w-44 rounded-lg border border-line-strong bg-surface px-3 py-2 text-xs shadow-lg">
+    <div className="min-w-44 rounded-lg border border-line-strong bg-surface px-3 py-2 text-[13px] shadow-lg">
       <div className="mb-1.5 font-medium text-ink-2">{title}</div>
       <div className="space-y-1">{children}</div>
     </div>

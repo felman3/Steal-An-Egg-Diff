@@ -60,35 +60,24 @@ export function ChartCard({
   else body = children;
 
   return (
-    <section className={`card flex flex-col p-4 sm:p-5 ${className}`} aria-labelledby={headingId} data-testid={testId}>
+    <section className={`card flex min-w-0 flex-col p-4 shadow-xs sm:p-5 ${className}`} aria-labelledby={headingId} data-testid={testId}>
       <header className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h2 id={headingId} className="text-[15px] font-semibold leading-snug text-ink">
+          <h2 id={headingId} className="text-[17px] font-semibold leading-snug text-ink">
             {title}
           </h2>
-          {subtitle && <p className="mt-0.5 text-[13px] leading-snug text-ink-2">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-sm leading-snug text-ink-2">{subtitle}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {actions}
           {canToggle && (
-            <div className="inline-flex rounded-lg border border-line-strong p-0.5" role="group" aria-label="View as">
-              <button
-                type="button"
-                aria-pressed={view === 'chart'}
-                onClick={() => setView('chart')}
-                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${view === 'chart' ? 'bg-accent-soft text-ink' : 'text-ink-2 hover:text-ink'}`}
-              >
-                <ChartColumn size={13} aria-hidden /> Chart
-              </button>
-              <button
-                type="button"
-                aria-pressed={view === 'table'}
-                onClick={() => setView('table')}
-                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${view === 'table' ? 'bg-accent-soft text-ink' : 'text-ink-2 hover:text-ink'}`}
-              >
-                <Table2 size={13} aria-hidden /> Table
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setView(view === 'chart' ? 'table' : 'chart')}
+              className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line px-2 text-[13px] font-medium text-ink-2 hover:bg-sunken hover:text-ink"
+            >
+              {view === 'chart' ? <><Table2 size={14} aria-hidden /> Table</> : <><ChartColumn size={14} aria-hidden /> Chart</>}
+            </button>
           )}
         </div>
       </header>

@@ -27,14 +27,17 @@ function subscribe(cb: () => void) {
 function start(key: string, fetcher: () => Promise<unknown>) {
   const existing = entries.get(key);
   if (existing && existing.status !== 'error') return;
-  entries.set(key, { status: 'loading' });
+  const request: Entry = { status: 'loading' };
+  entries.set(key, request);
   emit();
   fetcher()
     .then((data) => {
+      if (entries.get(key) !== request) return;
       entries.set(key, { status: 'success', data });
       emit();
     })
     .catch((err: unknown) => {
+      if (entries.get(key) !== request) return;
       entries.set(key, { status: 'error', error: toAppError(err) });
       emit();
     });
@@ -83,10 +86,10 @@ export function useQuery<T>(key: string | null, fetcher: () => Promise<T>): Quer
     if (key) start(key, runFetcher);
   }, [key, attempt, missing]);
 
-  // Keep the last successful result so a refetch (new filters) can hold the frame.
-  const [last, setLast] = useState<{ data: T | undefined }>({ data: undefined });
-  if (entry?.status === 'success' && last.data !== entry.data) {
-    setLast({ data: entry.data as T });
+  // Keep the frame during a retry of the same selection.
+  const [last, setLast] = useState<{ key: string | null; data: T }>();
+  if (entry?.status === 'success' && (last?.key !== key || last.data !== entry.data)) {
+    setLast({ key, data: entry.data as T });
   }
 
   const refetch = useCallback(() => {
@@ -100,5 +103,6 @@ export function useQuery<T>(key: string | null, fetcher: () => Promise<T>): Quer
   if (entry?.status === 'success') return { data: entry.data as T, error: undefined, isLoading: false, isRefreshing: false, refetch };
   // Never keep showing data from another scope after an error (e.g. a refusal).
   if (entry?.status === 'error') return { data: undefined, error: entry.error, isLoading: false, isRefreshing: false, refetch };
-  return { data: last.data, error: undefined, isLoading: last.data === undefined, isRefreshing: last.data !== undefined, refetch };
+  const previous = last?.key === key ? last.data : undefined;
+  return { data: previous, error: undefined, isLoading: previous === undefined, isRefreshing: previous !== undefined, refetch };
 }

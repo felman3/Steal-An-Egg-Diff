@@ -1,5 +1,4 @@
 import { Check, Minus } from 'lucide-react';
-import { PageHeader } from '../components/AppShell';
 import { DataTable } from '../components/ChartCard';
 import { ErrorState, LoadingState } from '../components/States';
 import { fetchMethodology } from '../lib/api';
@@ -13,8 +12,6 @@ export function AboutPage() {
 
   return (
     <>
-      <PageHeader title="About the data" description="What the dashboard measures, where the numbers come from and who can see what." showFilters={false} />
-
       <section className="card mb-5 border-l-4 !border-l-[var(--status-warning)] p-4 sm:p-5" data-testid="data-notice">
         <h2 className="text-[15px] font-semibold text-ink">Prototype and data notice</h2>
         <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-2">
@@ -54,7 +51,10 @@ export function AboutPage() {
             <h2 id="kpi-defs" className="mb-1 text-[15px] font-semibold text-ink">
               The five KPIs
             </h2>
-            <p className="mb-3 text-[13px] text-ink-2">Loaded from the kpi_definitions table. Targets and the two warning thresholds (warning, critical) live in kpi_targets — see Targets &amp; thresholds.</p>
+            <p className="mb-3 text-[13px] text-ink-2">
+              The source records are enrolments, final grades and anonymous SETE responses. The dashboard calculates the KPIs and trends from those records.
+              Alerts use the warning and critical levels in Targets &amp; thresholds.
+            </p>
             <DataTable
               spec={{
                 caption: 'KPI definitions',
@@ -126,7 +126,7 @@ export function AboutPage() {
                   <strong className="text-ink">On target</strong> — meets or beats the target.
                 </li>
                 <li>
-                  <strong className="text-ink">Below target</strong> — misses the target but is within the warning threshold (no alert).
+                  <strong className="text-ink">Off target</strong> — misses the target and is within the warning threshold.
                 </li>
                 <li>
                   <strong className="text-ink">Warning</strong> — worse than the warning threshold.

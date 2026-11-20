@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { formatInt, STATUS_LABEL } from '../../lib/format';
+import { formatInt, KPI_SAMPLE_LABEL, STATUS_LABEL } from '../../lib/format';
 import type { DepartmentKpiRow, KpiStatus, KpiSummaryRow } from '../../lib/types';
 import { STATUS_FILL } from '../../lib/status';
 import { barDomain, fmt, tickFormatter } from './chartUtils';
@@ -9,7 +9,6 @@ const BAR = 16;
 
 interface Datum {
   id: number;
-  collegeId: number;
   code: string;
   name: string;
   college: string;
@@ -36,14 +35,12 @@ export function DepartmentChart({
   rows: DepartmentKpiRow[];
   kpi: KpiSummaryRow;
   /** Drill-down: clicking a bar filters the whole dashboard to that department. */
-  onSelectDepartment?: (departmentId: number, collegeId: number) => void;
+  onSelectDepartment?: (departmentId: number) => void;
 }) {
-  const better = kpi.direction === 'higher_is_better' ? -1 : 1;
   const data: Datum[] = rows
     .filter((r) => r.value !== null)
     .map((r) => ({
       id: r.department_id,
-      collegeId: r.college_id,
       code: r.department_code,
       name: r.department_name.replace('Department of ', ''),
       college: r.college_code,
@@ -53,19 +50,18 @@ export function DepartmentChart({
       critical: r.critical_threshold,
       status: r.status,
       n: r.sample_size,
-    }))
-    .sort((a, b) => better * (a.value - b.value));
+    }));
   const missing = rows.filter((r) => r.value === null).map((r) => r.department_code);
 
   const domain = barDomain(kpi.unit, data.flatMap((d) => [d.value, d.target]));
-  const height = Math.max(180, data.length * 30 + 44);
+  const height = Math.max(154, data.length * 28 + 42);
   const summary = `${kpi.kpi_name} by department: ${data.map((d) => `${d.name} ${fmt(d.value, kpi.unit, kpi.decimals)} (${STATUS_LABEL[d.status]})`).join('; ')}.`;
 
   return (
     <div data-testid="department-chart">
       <div role="img" aria-label={summary}>
         <ResponsiveContainer width="100%" height={height}>
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 104, bottom: 4, left: 4 }} barSize={BAR} barGap={-BAR}>
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 114, bottom: 4, left: 4 }} barSize={BAR} barGap={-BAR}>
             <CartesianGrid horizontal={false} />
             <XAxis type="number" domain={domain} tickLine={false} axisLine={{ stroke: 'var(--axis)' }} tick={{ fontSize: 12 }} tickFormatter={tickFormatter(kpi.unit)} />
             <YAxis type="category" dataKey="code" width={46} tickLine={false} axisLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
@@ -80,7 +76,7 @@ export function DepartmentChart({
                     <TooltipRow label="Status" value={STATUS_LABEL[d.status]} />
                     <TooltipRow label="Target" value={fmt(d.target, kpi.unit, kpi.decimals)} />
                     <TooltipRow label="Warning / critical" value={`${fmt(d.warning, kpi.unit, kpi.decimals)} / ${fmt(d.critical, kpi.unit, kpi.decimals)}`} />
-                    <TooltipRow label="Sample size" value={formatInt(d.n)} />
+                    <TooltipRow label={KPI_SAMPLE_LABEL[kpi.kpi_code]} value={formatInt(d.n)} />
                   </TooltipBox>
                 );
               }}
@@ -92,11 +88,11 @@ export function DepartmentChart({
               cursor={onSelectDepartment ? 'pointer' : undefined}
               onClick={(entry) => {
                 const d = (entry as { payload?: Datum }).payload;
-                if (d && onSelectDepartment) onSelectDepartment(d.id, d.collegeId);
+                if (d && onSelectDepartment) onSelectDepartment(d.id);
               }}
             >
               {data.map((d) => (
-                <Cell key={d.code} fill={STATUS_FILL[d.status]} />
+                <Cell key={d.code} fill={STATUS_FILL[d.status]} stroke="var(--axis-ink)" strokeOpacity={0.4} />
               ))}
               <LabelList
                 dataKey="value"
@@ -112,7 +108,7 @@ export function DepartmentChart({
                   const targetX = Number(x) + (d.target - domain[0]) * pxPerUnit;
                   const labelX = Math.max(Number(x) + Number(width), pxPerUnit > 0 ? targetX : 0) + 8;
                   return (
-                    <text x={labelX} y={Number(y) + Number(h) / 2} dominantBaseline="central" fontSize={12} fill="var(--ink)">
+                    <text x={labelX} y={Number(y) + Number(h) / 2} dominantBaseline="central" fontSize={13} fill="var(--ink)">
                       <tspan fontWeight={600}>{fmt(d.value, kpi.unit, kpi.decimals)}</tspan>
                       {flagged && <tspan fill="var(--ink-2)">{`  ${d.status === 'critical' ? '⬣' : '▲'} ${STATUS_LABEL[d.status]}`}</tspan>}
                     </text>
@@ -124,18 +120,17 @@ export function DepartmentChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-2" aria-label="Legend">
+      <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2" aria-label="Legend">
         {(['on_target', 'below_target', 'warning', 'critical'] as KpiStatus[]).map((s) => (
           <li key={s} className="flex items-center gap-1.5">
-            <span aria-hidden className="inline-block size-2.5 rounded-sm" style={{ background: STATUS_FILL[s] }} />
+            <span aria-hidden className="inline-block size-2.5 rounded-sm border border-line-strong" style={{ background: STATUS_FILL[s] }} />
             {STATUS_LABEL[s]}
           </li>
         ))}
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="inline-block h-3 w-0.5 rounded bg-ink" /> Target
         </li>
-        {missing.length > 0 && <li className="text-ink-muted">No data: {missing.join(', ')}</li>}
-        {onSelectDepartment && data.length > 1 && <li className="text-ink-muted">Click a bar to drill down into that department</li>}
+        {missing.length > 0 && <li className="text-ink-muted">No reportable value · {missing.join(', ')}</li>}
       </ul>
     </div>
   );

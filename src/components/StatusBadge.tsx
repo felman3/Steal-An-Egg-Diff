@@ -2,17 +2,17 @@ import { CircleCheck, CircleMinus, CircleSlash, OctagonAlert, TriangleAlert } fr
 import { STATUS_LABEL } from '../lib/format';
 import type { KpiStatus } from '../lib/types';
 
-const STYLE: Record<KpiStatus, { bg: string; icon: string }> = {
-  on_target: { bg: 'bg-good-bg', icon: 'text-good' },
-  below_target: { bg: 'bg-neutral-bg', icon: 'text-neutral' },
-  warning: { bg: 'bg-warning-bg', icon: 'text-warning' },
-  critical: { bg: 'bg-critical-bg', icon: 'text-critical' },
-  no_data: { bg: 'bg-neutral-bg', icon: 'text-neutral' },
-  insufficient_data: { bg: 'bg-neutral-bg', icon: 'text-neutral' },
+const ICON_COLOR: Record<KpiStatus, string> = {
+  on_target: 'text-good',
+  below_target: 'text-neutral',
+  warning: 'text-warning',
+  critical: 'text-critical',
+  no_data: 'text-neutral',
+  insufficient_data: 'text-neutral',
 };
 
 export function StatusIcon({ status, size = 16 }: { status: KpiStatus; size?: number }) {
-  const cls = `${STYLE[status].icon} shrink-0`;
+  const cls = `${ICON_COLOR[status]} shrink-0`;
   const props = { size, className: cls, 'aria-hidden': true, strokeWidth: 2.25 } as const;
   switch (status) {
     case 'on_target':
@@ -32,7 +32,7 @@ export function StatusIcon({ status, size = 16 }: { status: KpiStatus; size?: nu
 export function StatusBadge({ status, compact = false }: { status: KpiStatus; compact?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full ${STYLE[status].bg} ${compact ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs'} font-semibold text-ink whitespace-nowrap`}
+      className={`status-tone inline-flex items-center gap-1.5 rounded-full bg-neutral-bg ${compact ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs'} font-semibold text-ink whitespace-nowrap`}
       data-status={status}
     >
       <StatusIcon status={status} size={compact ? 13 : 14} />

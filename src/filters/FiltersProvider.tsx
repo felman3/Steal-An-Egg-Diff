@@ -97,7 +97,13 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     [setParams, reference],
   );
 
-  const resetFilters = useCallback(() => setParams(new URLSearchParams(), { replace: true }), [setParams]);
+  const resetFilters = useCallback(() => {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      for (const key of ['ay', 'sem', 'college', 'dept']) next.delete(key);
+      return next;
+    }, { replace: true });
+  }, [setParams]);
 
   const describe = useMemo(() => {
     const ay = reference?.academicYears.find((a) => a.id === filters.academicYearId);
@@ -105,7 +111,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const col = reference?.colleges.find((c) => c.id === filters.collegeId);
     const dep = reference?.departments.find((d) => d.id === filters.departmentId);
     const period = [sem ? sem.name : 'All semesters', ay ? `AY ${ay.label}` : 'All academic years'].join(' · ');
-    const scope = dep ? `${col?.code ?? ''} · ${dep.name.replace('Department of ', '')}` : col ? col.name : 'All colleges';
+    const scope = dep ? dep.name.replace('Department of ', '') : col ? col.name : 'All colleges';
     return { period, scope };
   }, [reference, filters]);
 

@@ -1,6 +1,6 @@
 import { LogOut, ShieldAlert } from 'lucide-react';
-import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider, useLocation } from 'react-router';
+import type { ReactNode } from 'react';
+import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider } from 'react-router';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { AppShell } from './components/AppShell';
 import { PrototypeNotice } from './components/PrototypeNotice';
@@ -8,11 +8,6 @@ import { ErrorState, LoadingState } from './components/States';
 import { FiltersProvider } from './filters/FiltersProvider';
 import { LoginPage } from './pages/LoginPage';
 import { OverviewPage } from './pages/OverviewPage';
-
-const DepartmentsPage = lazy(() => import('./pages/DepartmentsPage').then((m) => ({ default: m.DepartmentsPage })));
-const FacultyPage = lazy(() => import('./pages/FacultyPage').then((m) => ({ default: m.FacultyPage })));
-const TargetsPage = lazy(() => import('./pages/TargetsPage').then((m) => ({ default: m.TargetsPage })));
-const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 
 function FullPage({ children }: { children: ReactNode }) {
   return (
@@ -26,7 +21,6 @@ function FullPage({ children }: { children: ReactNode }) {
 /** Route guard: only signed-in users with a dashboard profile get past here. */
 function RequireAuth() {
   const { status, error, retry, signOut } = useAuth();
-  const location = useLocation();
 
   if (status === 'loading') {
     return (
@@ -35,7 +29,7 @@ function RequireAuth() {
       </FullPage>
     );
   }
-  if (status === 'signed_out') return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  if (status === 'signed_out') return <Navigate to="/login" replace />;
   if (status === 'error' && error) {
     return (
       <FullPage>
@@ -67,26 +61,21 @@ function RequireAuth() {
   );
 }
 
-function PageFallback() {
-  return <LoadingState label="Loading page…" minHeight={400} />;
-}
-
 function NotFound() {
   return (
     <div className="card mx-auto max-w-lg p-8 text-center">
       <p className="text-sm font-semibold text-accent">404</p>
       <h1 className="mt-1 text-xl font-semibold text-ink">Page not found</h1>
       <p className="mt-2 text-sm text-ink-2">The page you requested does not exist.</p>
-      <Link to="/" className="btn btn-primary mt-5">
+      <Link to="/dashboard" className="btn btn-primary mt-5">
         Back to overview
       </Link>
     </div>
   );
 }
 
-const lazyPage = (node: ReactNode) => <Suspense fallback={<PageFallback />}>{node}</Suspense>;
-
 const router = createBrowserRouter([
+  { path: '/', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <LoginPage /> },
   {
     element: <RequireAuth />,
@@ -94,11 +83,11 @@ const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <OverviewPage /> },
-          { path: 'departments', element: lazyPage(<DepartmentsPage />) },
-          { path: 'faculty', element: lazyPage(<FacultyPage />) },
-          { path: 'targets', element: lazyPage(<TargetsPage />) },
-          { path: 'about', element: lazyPage(<AboutPage />) },
+          { path: 'dashboard', element: <OverviewPage /> },
+          { path: 'departments', element: <Navigate to="/dashboard" replace /> },
+          { path: 'faculty', element: <Navigate to="/dashboard" replace /> },
+          { path: 'targets', element: <Navigate to="/dashboard" replace /> },
+          { path: 'about', element: <Navigate to="/dashboard" replace /> },
           { path: '*', element: <NotFound /> },
         ],
       },

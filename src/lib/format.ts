@@ -1,4 +1,12 @@
-import type { KpiDirection, KpiStatus, KpiUnit } from './types';
+import type { KpiCode, KpiDirection, KpiStatus, KpiUnit } from './types';
+
+export const KPI_SAMPLE_LABEL: Record<KpiCode, string> = {
+  sete_mean: 'SETE responses',
+  sete_response_rate: 'eligible enrolments',
+  pass_rate: 'eligible enrolments',
+  mean_gwa: 'graded enrolments',
+  faculty_standard_rate: 'rated faculty',
+};
 
 export function formatValue(value: number | null | undefined, unit: KpiUnit, decimals = 2): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -26,7 +34,7 @@ export function formatInt(n: number | null | undefined): string {
 
 export const STATUS_LABEL: Record<KpiStatus, string> = {
   on_target: 'On target',
-  below_target: 'Below target',
+  below_target: 'Off target',
   warning: 'Warning',
   critical: 'Critical',
   no_data: 'No data',
@@ -43,7 +51,7 @@ export const STATUS_RANK: Record<KpiStatus, number> = {
 };
 
 export const ROLE_LABEL = {
-  admin: 'Academic Administrator',
+  admin: 'Authorized Academic Administrator',
 } as const;
 
 /** Short x-axis label: "1st Sem 2022-2023" -> "1S '22". */

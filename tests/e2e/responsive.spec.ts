@@ -1,17 +1,26 @@
 import { expect, test } from '@playwright/test';
 import { signInAs, waitForKpis } from './helpers';
 
-test('mobile: dashboard renders without horizontal scrolling and navigation works', async ({ page }) => {
+test('mobile: the SPECTRA header, filters, charts and tooltips fit the viewport', async ({ page }) => {
   await signInAs(page, 'admin');
   await waitForKpis(page);
-  for (const path of ['/', '/departments', '/faculty', '/targets', '/about']) {
-    await page.goto(path);
-    await page.waitForLoadState('networkidle');
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    expect(overflow, `horizontal overflow on ${path}`).toBeLessThanOrEqual(1);
-  }
-  await page.getByTestId('open-menu').click();
-  await page.getByRole('dialog').getByRole('link', { name: 'Department scorecard' }).click();
-  await expect(page).toHaveURL(/\/departments/);
-  await expect(page.getByTestId('scorecard')).toBeVisible();
+  const masthead = page.getByTestId('spectra-masthead');
+  await expect(masthead.getByTestId('spectra-brand')).toBeVisible();
+  await expect(masthead).toHaveCSS('height', '76px');
+  await expect(page.getByTestId('filter-bar')).toBeHidden();
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  await expect(page.getByTestId('filter-bar')).toBeVisible();
+  const definition = page.getByRole('button', { name: 'About Course Pass Rate', exact: true });
+  await definition.click();
+  await expect(page.getByTestId('kpi-tooltip-pass_rate')).toBeVisible();
+  await expect(page.getByTestId('sete-coverage-chart')).toBeVisible();
+  await expect(page.getByTestId('department-matrix').getByRole('table')).toBeVisible();
+  const viewportWidth = page.viewportSize()!.width;
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewportWidth + 1);
+  const matrix = page.getByRole('region', { name: 'Scrollable department KPI matrix' });
+  const matrixOffset = await matrix.evaluate((element) => {
+    element.scrollLeft = 100;
+    return element.scrollLeft;
+  });
+  expect(matrixOffset).toBeGreaterThan(0);
 });

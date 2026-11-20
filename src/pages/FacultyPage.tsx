@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { PageHeader } from '../components/AppShell';
+import { FacultyRatingDistribution } from '../components/charts/FacultyRatingDistribution';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { useFilters } from '../filters/FiltersProvider';
@@ -27,7 +27,7 @@ export function FacultyPage() {
 
   return (
     <>
-      <PageHeader title="Faculty SETE results" />
+      <FacultyRatingDistribution className="mb-4" />
       <section className="card p-4 sm:p-5" aria-labelledby="faculty-heading" data-testid="faculty-page">
         <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>

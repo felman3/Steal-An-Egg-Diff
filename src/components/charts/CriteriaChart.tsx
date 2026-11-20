@@ -1,113 +1,68 @@
-import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { formatInt } from '../../lib/format';
 import type { CriterionRow } from '../../lib/types';
+import { magnitudeBlue } from '../../lib/status';
 import { CRITERION_SHORT } from './chartUtils';
-import { TooltipBox, TooltipRow } from './ChartTooltip';
 
-interface Datum {
-  label: string;
-  full: string;
-  scope: number | null;
-  institution: number | null;
-  n: number;
+function ScoreTrack({ value, benchmark = false }: { value: number | null; benchmark?: boolean }) {
+  return (
+    <div className={`relative h-1.5 rounded-full ${benchmark ? 'bg-accent-soft' : 'bg-sunken'}`}>
+      {value !== null && (
+        <span
+          className={`absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${benchmark ? 'border-2 border-accent bg-surface' : 'border border-accent/35'}`}
+          style={{ left: `${((value - 1) / 4) * 100}%`, background: benchmark ? undefined : magnitudeBlue(value - 1, 4) }}
+        />
+      )}
+    </div>
+  );
 }
 
 export function CriteriaChart({ rows, scopeLabel, compare }: { rows: CriterionRow[]; scopeLabel: string; compare: boolean }) {
-  const data: Datum[] = rows.map((r) => ({
-    label: `${r.criterion_code}. ${CRITERION_SHORT[r.criterion_code] ?? r.criterion_name}`,
-    full: `${r.criterion_code}. ${r.criterion_name}`,
-    scope: r.scope_mean,
-    institution: r.institution_mean,
-    n: r.responses,
-  }));
-  const rated = data.filter((d) => d.scope !== null).sort((a, b) => (a.scope as number) - (b.scope as number));
-  const weakest = rated[0];
-  const strongest = rated[rated.length - 1];
-  // Ratings cluster between 3.5 and 4.6, so the radial axis starts at 3.0 to make differences visible (labelled below the chart).
-  const allValues = data.flatMap((d) => [d.scope, d.institution]).filter((v): v is number => v !== null);
-  const floor = allValues.length && Math.min(...allValues) < 3.1 ? 1 : 3;
-  const summary = `Mean SETE score by criterion for ${scopeLabel}: ${data.map((d) => `${d.full} ${d.scope?.toFixed(2) ?? 'suppressed'}`).join('; ')}.`;
+  const summary = rows.map((row) => {
+    const scope = row.scope_mean?.toFixed(2) ?? 'suppressed';
+    const benchmark = compare ? `, institution ${row.institution_mean?.toFixed(2) ?? 'unavailable'}` : '';
+    return `${row.criterion_name} ${scope}${benchmark}`;
+  }).join('. ');
+  const rated = rows.filter((row) => row.scope_mean !== null);
+  const lowest = rated.reduce<CriterionRow | undefined>(
+    (min, row) => !min || Number(row.scope_mean) < Number(min.scope_mean) ? row : min,
+    undefined,
+  );
+  const uniqueLowest = lowest && rated.length > 1 && rated.filter((row) => row.scope_mean === lowest.scope_mean).length === 1;
 
   return (
     <div data-testid="criteria-chart" className="flex flex-1 flex-col">
-      <div role="img" aria-label={summary} className="relative flex-1" style={{ minHeight: 280 }}>
-        <ResponsiveContainer width="100%" height="100%" className="!absolute inset-0">
-          <RadarChart data={data} outerRadius="78%" margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
-            <PolarGrid stroke="var(--grid)" />
-            <PolarAngleAxis dataKey="label" tick={{ fontSize: 12, fill: 'var(--ink-2)' }} />
-            <PolarRadiusAxis domain={[floor, 5]} tickCount={floor === 3 ? 5 : 5} angle={90} tick={{ fontSize: 10, fill: 'var(--axis-ink)' }} axisLine={false} />
-            {compare && (
-              <Radar
-                name="Institution"
-                dataKey="institution"
-                stroke="var(--series-muted)"
-                strokeDasharray="4 3"
-                strokeWidth={1.5}
-                fill="var(--series-muted)"
-                fillOpacity={0.12}
-                isAnimationActive={false}
-              />
-            )}
-            <Radar
-              name={scopeLabel}
-              dataKey="scope"
-              stroke="var(--series-1)"
-              strokeWidth={2}
-              fill="var(--series-1)"
-              fillOpacity={0.22}
-              dot={{ r: 3.5, fill: 'var(--series-1)', stroke: 'var(--surface)', strokeWidth: 1.5 }}
-              isAnimationActive={false}
-            />
-            <Tooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const d = payload[0].payload as Datum;
-                return (
-                  <TooltipBox title={d.full}>
-                    <TooltipRow label={scopeLabel} value={d.scope?.toFixed(2) ?? 'Suppressed'} keyColor="var(--series-1)" keyShape="square" />
-                    {compare && <TooltipRow label="Institution" value={d.institution?.toFixed(2) ?? '—'} keyColor="var(--series-muted)" keyShape="square" />}
-                    <TooltipRow label="Criterion scores" value={formatInt(d.n)} />
-                  </TooltipBox>
-                );
-              }}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-2">
-        {floor === 3 && <span className="order-last w-full text-ink-muted">Radial axis starts at 3.0 so differences between criteria are visible.</span>}
-        {compare ? (
-          <ul className="flex items-center gap-4" aria-label="Legend">
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="inline-block size-2.5 rounded-sm" style={{ background: 'var(--series-1)' }} /> {scopeLabel}
+      {compare && (
+        <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2" aria-label="Legend">
+          <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-accent" aria-hidden /> {scopeLabel}</li>
+          <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-full border-2 border-accent" aria-hidden /> Institution</li>
+        </ul>
+      )}
+      <div role="img" className="flex flex-1 flex-col" aria-label={`Mean SETE criterion scores for ${scopeLabel} on a scale from 1 to 5. ${summary}.`}>
+        <ul className="flex flex-1 flex-col justify-evenly gap-4" aria-hidden>
+          {rows.map((row) => (
+            <li key={row.criterion_code}>
+              <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
+                <span className="font-medium text-ink">{row.criterion_code}. {CRITERION_SHORT[row.criterion_code] ?? row.criterion_name}</span>
+                <span className="tabular font-semibold text-ink" data-testid="criterion-score">{row.scope_mean?.toFixed(2) ?? 'Suppressed'}</span>
+              </div>
+              <ScoreTrack value={row.scope_mean} />
+              {compare && (
+                <div className="mt-1.5">
+                  <ScoreTrack value={row.institution_mean} benchmark />
+                  <p className="tabular mt-0.5 text-right text-[11px] text-ink-2">Institution {row.institution_mean?.toFixed(2) ?? '—'}</p>
+                </div>
+              )}
             </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="inline-block size-2.5 rounded-sm" style={{ background: 'var(--series-muted)' }} /> Institution benchmark
-            </li>
-          </ul>
-        ) : (
-          <span>Scale: 1 = poor · 5 = outstanding</span>
-        )}
-      </div>
-      {weakest && strongest && weakest !== strongest && (
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2" data-testid="criteria-insight">
-          <div className="rounded-lg bg-sunken px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Development focus</p>
-            <p className="mt-0.5 text-sm font-semibold text-ink">{weakest.full}</p>
-            <p className="text-xs text-ink-2">
-              Lowest-rated criterion ({weakest.scope?.toFixed(2)}
-              {compare && weakest.institution !== null ? `; institution ${weakest.institution.toFixed(2)}` : ''}). A candidate theme for faculty
-              development.
-            </p>
-          </div>
-          <div className="rounded-lg bg-sunken px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Strength</p>
-            <p className="mt-0.5 text-sm font-semibold text-ink">{strongest.full}</p>
-            <p className="text-xs text-ink-2">
-              Highest-rated criterion ({strongest.scope?.toFixed(2)}). Gap to the focus area: {((strongest.scope ?? 0) - (weakest.scope ?? 0)).toFixed(2)}.
-            </p>
-          </div>
+          ))}
+        </ul>
+        <div className="tabular mt-2 flex justify-between text-[11px] text-ink-muted" aria-hidden>
+          {[1, 2, 3, 4, 5].map((tick) => <span key={tick}>{tick}</span>)}
         </div>
+      </div>
+      {uniqueLowest && (
+        <p className="mt-3 rounded-lg bg-sunken px-3 py-2 text-[13px] leading-relaxed text-ink-2" data-testid="criteria-insight">
+          <strong className="text-ink">Lowest observed score</strong> · {CRITERION_SHORT[lowest.criterion_code] ?? lowest.criterion_name} ({lowest.scope_mean?.toFixed(2)}).
+          Review participation and course context before setting a development priority.
+        </p>
       )}
     </div>
   );

@@ -8,6 +8,7 @@ import type {
   CriterionRow,
   Department,
   DepartmentKpiRow,
+  FacultyRatingBandRow,
   FacultyRow,
   Filters,
   GradeBandRow,
@@ -91,6 +92,13 @@ export async function fetchFacultyPerformance(f: Filters): Promise<FacultyRow[]>
     warning_threshold: num(r.warning_threshold) ?? 0,
     critical_threshold: num(r.critical_threshold) ?? 0,
   }));
+}
+
+export async function fetchFacultyRatingBands(f: Filters): Promise<FacultyRatingBandRow[]> {
+  // Project only the rating band on the server. The dashboard needs no identifying faculty fields.
+  const { data, error } = await supabase.rpc('get_faculty_performance', scopeArgs(f)).select('rating_band');
+  if (error) throw toAppError(error);
+  return (data ?? []) as FacultyRatingBandRow[];
 }
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,8 @@
-import { BadgeCheck, ChartLine, Eye, EyeOff, GraduationCap, KeyRound, LoaderCircle, LogIn, ShieldCheck } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, LogIn, ShieldCheck } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
-import { PrototypeNotice } from '../components/PrototypeNotice';
+import { SpectraBrand } from '../components/SpectraBrand';
 import { demoPassword, supabaseConfigured } from '../lib/supabase';
 
 const ADMIN_DEMO = 'demo.academic.admin@example.com';
@@ -11,23 +11,12 @@ const UNAUTHORIZED_DEMO = 'demo.unauthorized@example.com';
 export function LoginPage() {
   const { status, signIn } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/';
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(demoPassword ? ADMIN_DEMO : '');
+  const [password, setPassword] = useState(demoPassword);
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Signed in: go on. Accounts without academic-administrator access ('no_profile')
-  // are sent on too, so the route guard can show them the Access denied screen.
-  const signedIn = status === 'ready' || status === 'no_profile';
-  useEffect(() => {
-    if (signedIn) navigate(from, { replace: true });
-  }, [signedIn, from, navigate]);
-
-  if (signedIn) return <Navigate to={from} replace />;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -39,61 +28,32 @@ export function LoginPage() {
     setBusy(source);
     try {
       await signIn(em, pw);
+      void navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed.');
       setBusy(null);
     }
   }
 
-  const waiting = busy !== null && status !== 'signed_out';
-
   return (
-    <div className="flex min-h-dvh flex-col">
-      <PrototypeNotice />
-      <div className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:py-12">
-        <section className="order-2 lg:order-1">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-accent text-accent-ink">
-              <GraduationCap size={22} aria-hidden />
-            </span>
-            <div>
-              <p className="text-lg font-semibold text-ink">Academic Quality Dashboard</p>
-              <p className="text-sm text-ink-2">SETE &amp; academic performance analytics</p>
-            </div>
-          </div>
-          <h1 className="mt-8 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-            Decision support for the authorized academic administrator.
+    <div className="login-page flex min-h-dvh items-center px-3 py-4 sm:px-8 sm:py-10">
+      <main className="login-shell mx-auto grid w-full max-w-[1120px] lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="login-intro relative isolate flex min-w-0 flex-col justify-center overflow-hidden px-5 py-7 sm:px-10 sm:py-10 lg:px-12 lg:py-14">
+          <SpectraBrand className="spectra-brand--login" />
+          <h1 className="mt-6 max-w-[16ch] text-[1.75rem] font-bold leading-[1.12] tracking-tight text-balance sm:mt-8 sm:text-[clamp(2.2rem,4vw,3.25rem)]">
+            Academic Performance and Teaching Evidence
           </h1>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-2">
-            One dashboard that combines Student and Faculty Portal records (enrolment and final grades) with SETE — the Student Evaluation
-            of Teaching Effectiveness. Five KPIs are checked against targets and warning thresholds stored in the database, with
-            recommended management actions, filterable by academic year, semester, college and department.
+          <p className="mt-4 max-w-[39ch] text-sm leading-relaxed text-blue-100 sm:text-base">
+            A workspace for authorized academic administrators to review outcomes, understand SETE participation, and act on threshold alerts.
           </p>
-          <ul className="mt-6 grid max-w-xl gap-3 text-sm text-ink-2 sm:grid-cols-2">
-            <li className="flex gap-2">
-              <ChartLine size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Trends, department comparisons and SETE criteria
-            </li>
-            <li className="flex gap-2">
-              <ShieldCheck size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Only authorized academic administrators can see data
-            </li>
-            <li className="flex gap-2">
-              <BadgeCheck size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Warning and critical indicators from stored thresholds
-            </li>
-            <li className="flex gap-2">
-              <KeyRound size={17} className="mt-0.5 shrink-0 text-accent" aria-hidden /> Anonymous SETE, pseudonymised faculty, small results suppressed
-            </li>
-          </ul>
-          <p className="mt-8 max-w-xl rounded-xl border border-line bg-surface p-4 text-[13px] leading-relaxed text-ink-2">
-            <strong className="text-ink">About this prototype.</strong> Built for an academic case study. Every student, faculty member,
-            grade and evaluation shown is <strong className="text-ink">synthetic demonstration data</strong> generated for this project.
-            The case study is set in the context of Batangas State University (The National Engineering University), but this prototype is
-            not affiliated with or endorsed by the university and is not integrated with its Student and Faculty Portal or SETE.
+          <p className="mt-6 flex items-center gap-2 text-xs font-medium text-blue-100" data-testid="prototype-notice">
+            <ShieldCheck size={15} aria-hidden /> Academic prototype with synthetic demonstration data
           </p>
         </section>
 
-        <section className="order-1 lg:order-2">
-          <div className="card p-5 shadow-sm sm:p-7">
-            <h2 className="text-xl font-semibold text-ink">Sign in</h2>
+        <section className="flex min-w-0 items-center bg-surface px-5 py-6 sm:p-10 lg:p-12">
+          <div className="mx-auto w-full max-w-md">
+            <h2 className="text-[1.75rem] font-semibold tracking-tight text-ink">Sign In</h2>
             <p className="mt-1 text-sm text-ink-2">Access is limited to authorized academic administrators.</p>
 
             {!supabaseConfigured && (
@@ -143,13 +103,15 @@ export function LoginPage() {
                 {busy === 'form' ? 'Signing in…' : 'Sign in'}
               </button>
             </form>
+            {status === 'ready' && (
+              <Link to="/dashboard" className="mt-3 inline-flex min-h-8 items-center gap-1.5 text-sm font-semibold text-accent hover:underline">
+                Continue to dashboard <ArrowRight size={15} aria-hidden />
+              </Link>
+            )}
 
             {demoPassword && (
-              <div className="mt-7 border-t border-line pt-6" data-testid="demo-accounts">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-ink">Demonstration access</h3>
-                  <span className="rounded-full bg-warning-bg px-2 py-0.5 text-[11px] font-semibold text-ink">Synthetic data only</span>
-                </div>
+              <div className="mt-5 border-t border-line pt-4" data-testid="demo-accounts">
+                <h3 className="text-sm font-semibold text-ink">Demonstration Access</h3>
                 <button
                   type="button"
                   disabled={busy !== null}
@@ -158,14 +120,13 @@ export function LoginPage() {
                     setPassword(demoPassword);
                     void attempt(ADMIN_DEMO, demoPassword, ADMIN_DEMO);
                   }}
-                  className="mt-3 flex w-full items-center gap-3 rounded-xl border-2 border-accent bg-accent-soft px-3 py-3 text-left transition-colors hover:bg-sunken disabled:opacity-60"
+                  className="mt-2.5 flex w-full items-center gap-3 rounded-xl border border-line-strong px-3 py-3 text-left transition-colors hover:border-accent hover:bg-accent-soft disabled:opacity-60"
                   data-testid="demo-admin"
                 >
                   <ShieldCheck size={20} className="shrink-0 text-accent" aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-ink">Sign in as the Academic Administrator</span>
-                    <span className="block truncate text-xs text-ink-2">Primary user · all colleges · targets, alerts and faculty SETE results</span>
-                    <span className="block truncate font-mono text-[11px] text-ink-muted">{ADMIN_DEMO}</span>
+                    <span className="block text-xs text-ink-2">Demo access to the institution-wide dashboard</span>
                   </span>
                   {busy === ADMIN_DEMO ? (
                     <LoaderCircle size={16} className="animate-spin text-ink-2" aria-label="Signing in" />
@@ -174,8 +135,7 @@ export function LoginPage() {
                   )}
                 </button>
                 <p className="mt-3 text-xs leading-relaxed text-ink-2">
-                  Password: <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px] text-ink">{demoPassword}</code>. Demo credentials
-                  cannot be changed and public sign-up is disabled.
+                  The email and password are prefilled for the demo administrator.
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-ink-2">
                   <strong className="text-ink">Access-control check:</strong> the{' '}
@@ -196,10 +156,10 @@ export function LoginPage() {
                 </p>
               </div>
             )}
-            {waiting && <p className="sr-only" role="status">Signing in…</p>}
+            {busy !== null && <p className="sr-only" role="status">Signing in…</p>}
           </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }
