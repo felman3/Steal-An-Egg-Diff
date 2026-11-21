@@ -415,13 +415,14 @@ export function OverviewPage() {
                 testId="card-sete-coverage"
                 title="SETE Participation and Rating"
                 subtitle="Each dot is a department · rating out of 5"
+                inlineActions
                 actions={(coveragePoints.length > 1 || coverageFilter !== 'all') && (
-                  <div className="flex items-center gap-1.5">
+                  <div>
                     <label htmlFor={coverageFilterId} className="sr-only">Filter by participation status</label>
                     <select id={coverageFilterId} className="field !min-h-9 !w-auto !px-2 !py-1 text-[13px]" value={coverageFilter}
                       onChange={(event) => setCoverageFilter(event.target.value as CoverageFilter)}>
-                      <option value="all">All participation statuses</option>
-                      <option value="low">Low participation</option>
+                      <option value="all">All statuses</option>
+                      <option value="low">Low</option>
                       <option value="on-target">On target</option>
                     </select>
                   </div>
@@ -455,6 +456,7 @@ export function OverviewPage() {
                 testId="card-faculty-rating"
                 title="Faculty Rating Distribution"
                 subtitle="Faculty grouped by mean SETE score, rounded to two decimal places."
+                inlineActions
                 isLoading={faculty.isLoading}
                 isRefreshing={faculty.isRefreshing}
                 error={faculty.error}

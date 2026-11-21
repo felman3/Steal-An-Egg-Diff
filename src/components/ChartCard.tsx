@@ -13,6 +13,7 @@ interface ChartCardProps {
   title: string;
   subtitle?: ReactNode;
   actions?: ReactNode;
+  inlineActions?: boolean;
   isLoading?: boolean;
   isRefreshing?: boolean;
   error?: AppError;
@@ -35,6 +36,7 @@ export function ChartCard({
   title,
   subtitle,
   actions,
+  inlineActions = false,
   isLoading,
   isRefreshing,
   error,
@@ -51,6 +53,13 @@ export function ChartCard({
   const [view, setView] = useState<'chart' | 'table'>('chart');
   const headingId = useId();
   const canToggle = Boolean(table) && !isLoading && !error && !isEmpty;
+  const ViewIcon = view === 'chart' ? Table2 : ChartColumn;
+  const headerLayout = inlineActions
+    ? 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1'
+    : 'flex flex-wrap items-start justify-between gap-x-4 gap-y-2';
+  const actionLayout = inlineActions
+    ? 'col-start-2 row-start-1 flex items-center gap-1.5'
+    : 'flex flex-wrap items-center gap-2';
 
   let body: ReactNode;
   if (isLoading) body = <LoadingState minHeight={minHeight} />;
@@ -61,14 +70,14 @@ export function ChartCard({
 
   return (
     <section className={`card flex min-w-0 flex-col p-4 shadow-xs sm:p-5 ${className}`} aria-labelledby={headingId} data-testid={testId}>
-      <header className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          <h2 id={headingId} className="text-base font-semibold leading-snug text-ink">
+      <header className={`mb-3 ${headerLayout}`}>
+        <div className={inlineActions ? 'contents' : 'min-w-0'}>
+          <h2 id={headingId} className={`text-base font-semibold leading-snug text-ink ${inlineActions ? 'col-start-1 row-start-1 wrap-anywhere' : ''}`}>
             {title}
           </h2>
-          {subtitle && <p className="mt-1 text-sm leading-snug text-ink-2">{subtitle}</p>}
+          {subtitle && <p className={`text-sm leading-snug text-ink-2 ${inlineActions ? 'col-span-2 row-start-2' : 'mt-1'}`}>{subtitle}</p>}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={actionLayout}>
           {actions}
           {canToggle && (
             <button
@@ -76,7 +85,8 @@ export function ChartCard({
               onClick={() => setView(view === 'chart' ? 'table' : 'chart')}
               className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line px-2 text-[13px] font-medium text-ink-2 hover:bg-sunken hover:text-ink"
             >
-              {view === 'chart' ? <><Table2 size={14} aria-hidden /> Table</> : <><ChartColumn size={14} aria-hidden /> Chart</>}
+              <ViewIcon size={14} className={inlineActions ? 'max-[360px]:hidden' : undefined} aria-hidden />
+              {view === 'chart' ? 'Table' : 'Chart'}
             </button>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export type DemoRole = 'admin' | 'unauthorized';
 
@@ -20,6 +20,19 @@ export async function signInAs(page: Page, role: DemoRole) {
 export async function waitForKpis(page: Page) {
   await expect(page.getByTestId('kpi-grid')).toBeVisible();
   await expect(page.getByTestId('kpi-value-sete_mean')).not.toHaveText('—');
+}
+
+export async function expectChartControlsBesideTitle(card: Locator, ...controls: Locator[]) {
+  const title = card.getByRole('heading', { level: 2 });
+  await expect(title).toBeVisible();
+  for (const control of controls) {
+    await expect(control).toBeVisible();
+    const titleBox = (await title.boundingBox())!;
+    const controlBox = (await control.boundingBox())!;
+    expect(controlBox.x).toBeGreaterThanOrEqual(titleBox.x + titleBox.width);
+    expect(controlBox.y).toBeLessThan(titleBox.y + titleBox.height);
+    expect(controlBox.y + controlBox.height).toBeGreaterThan(titleBox.y);
+  }
 }
 
 export async function kpiValues(page: Page) {

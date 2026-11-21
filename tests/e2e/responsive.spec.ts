@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signInAs, waitForKpis } from './helpers';
+import { expectChartControlsBesideTitle, signInAs, waitForKpis } from './helpers';
 
 test('mobile: the SPECTRA header, filters, charts and tooltips fit the viewport', async ({ page }) => {
   await signInAs(page, 'admin');
@@ -24,4 +24,11 @@ test('mobile: the SPECTRA header, filters, charts and tooltips fit the viewport'
     return element.scrollLeft;
   });
   expect(matrixOffset).toBeGreaterThan(0);
+
+  await page.setViewportSize({ width: 320, height: 700 });
+  const coverage = page.getByTestId('card-sete-coverage');
+  const ratings = page.getByTestId('card-faculty-rating');
+  await expectChartControlsBesideTitle(coverage, coverage.getByLabel('Filter by participation status'), coverage.getByRole('button', { name: 'Table', exact: true }));
+  await expectChartControlsBesideTitle(ratings, ratings.getByRole('button', { name: 'Table', exact: true }));
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
 });

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { kpiValues, signInAs, waitForKpis } from './helpers';
+import { expectChartControlsBesideTitle, kpiValues, signInAs, waitForKpis } from './helpers';
 
 test.describe('authentication', () => {
   test('protected pages redirect to login, which labels the prototype and demo accounts', async ({ page }) => {
@@ -154,10 +154,14 @@ test.describe('academic administrator dashboard', () => {
   test('participation filter limits SETE chart and table to the selected status', async ({ page }) => {
     await signInAs(page, 'admin');
     const coverage = page.getByTestId('card-sete-coverage');
-    await coverage.getByRole('button', { name: 'Table', exact: true }).click();
+    const filter = coverage.getByLabel('Filter by participation status');
+    const tableToggle = coverage.getByRole('button', { name: 'Table', exact: true });
+    const ratings = page.getByTestId('card-faculty-rating');
+    await expectChartControlsBesideTitle(coverage, filter, tableToggle);
+    await expectChartControlsBesideTitle(ratings, ratings.getByRole('button', { name: 'Table', exact: true }));
+    await tableToggle.click();
     const rows = coverage.getByRole('table').locator('tbody tr');
     const allCount = await rows.count();
-    const filter = coverage.getByLabel('Filter by participation status');
     await filter.selectOption('low');
     await expect.poll(() => rows.count()).toBeLessThan(allCount);
     expect(await rows.count()).toBeGreaterThan(0);
