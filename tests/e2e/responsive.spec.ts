@@ -10,9 +10,10 @@ test('mobile: the SPECTRA header, filters, charts and tooltips fit the viewport'
   await expect(page.getByTestId('filter-bar')).toBeHidden();
   await page.getByRole('button', { name: 'Filters', exact: true }).click();
   await expect(page.getByTestId('filter-bar')).toBeVisible();
-  const definition = page.getByRole('button', { name: 'About Course Pass Rate', exact: true });
+  const definition = page.getByRole('button', { name: 'About Faculty Meeting SETE Standard', exact: true });
   await definition.click();
-  await expect(page.getByTestId('kpi-tooltip-pass_rate')).toBeVisible();
+  await expect(page.getByTestId('kpi-tooltip-faculty_standard_rate')).toContainText('or higher after rounding to two decimal places');
+  await expect(page.getByTestId('card-faculty-rating').getByRole('list', { name: 'Legend' })).toContainText('4.50–5.00');
   await expect(page.getByTestId('sete-coverage-chart')).toBeVisible();
   await expect(page.getByTestId('department-matrix').getByRole('table')).toBeVisible();
   const viewportWidth = page.viewportSize()!.width;

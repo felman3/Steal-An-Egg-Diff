@@ -11,11 +11,12 @@ interface Props {
   onSelect: () => void;
   /** Case-study metadata (category, objective, actions) from kpi_definitions. */
   def?: KpiDefinition;
+  formulaExplanation?: string;
   /** Responsible-interpretation caution, e.g. low SETE response rate. */
   caution?: string | null;
 }
 
-export function KpiCard({ kpi, selected, onSelect, def, caution }: Props) {
+export function KpiCard({ kpi, selected, onSelect, def, formulaExplanation, caution }: Props) {
   const delta = kpi.value !== null && kpi.previous_value !== null ? kpi.value - kpi.previous_value : null;
   const improved = delta === null ? null : isImprovement(Number(delta.toFixed(kpi.decimals)), kpi.direction);
   const DeltaIcon = delta === null || improved === null ? Minus : delta > 0 ? ArrowUp : ArrowDown;
@@ -117,11 +118,12 @@ export function KpiCard({ kpi, selected, onSelect, def, caution }: Props) {
           </p>
         )}
         <p className="mt-2 rounded-lg bg-sunken px-2.5 py-1.5 text-[13px] leading-relaxed text-ink-2">
-          <strong className="block font-semibold text-ink">Formula</strong> {kpi.formula}
+          <strong className="block font-semibold text-ink">Formula</strong> {formulaExplanation ?? kpi.formula}
           {kpi.unit === 'grade' && <span className="mt-1 block">Lower grades are better. 1.00 is highest and 3.00 is the passing cutoff.</span>}
         </p>
         <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
-          <strong className="font-semibold text-ink">Target</strong> {kpi.direction === 'lower_is_better' ? '≤' : '≥'}{' '}
+          <strong className="font-semibold text-ink">{kpi.kpi_code === 'faculty_standard_rate' ? 'Group target' : 'Target'}</strong>{' '}
+          {kpi.direction === 'lower_is_better' ? '≤' : '≥'}{' '}
           {formatValue(kpi.target, kpi.unit, kpi.decimals)} · warning {kpi.direction === 'lower_is_better' ? '>' : '<'} {formatValue(kpi.warning_threshold, kpi.unit, kpi.decimals)} · critical {kpi.direction === 'lower_is_better' ? '>' : '<'}{' '}
           {formatValue(kpi.critical_threshold, kpi.unit, kpi.decimals)}
         </p>

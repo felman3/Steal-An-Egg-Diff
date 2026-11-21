@@ -1,10 +1,10 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import type { FacultyRatingBandRow } from '../../lib/types';
+import type { FacultyRatingBandRow, RatingBand } from '../../lib/types';
 import { countRatingBands, type BandCount } from './ratingBands';
 import { TooltipBox, TooltipRow } from './ChartTooltip';
 
-export function RatingDonut({ rows }: { rows: FacultyRatingBandRow[] }) {
-  const { bands, rated, insufficient } = countRatingBands(rows);
+export function RatingDonut({ rows, ratingScale }: { rows: FacultyRatingBandRow[]; ratingScale?: RatingBand[] }) {
+  const { bands, rated, insufficient } = countRatingBands(rows, ratingScale);
   const shown = bands.filter((b) => b.count > 0);
   const summary = `Faculty by SETE descriptive rating: ${bands.map((b) => `${b.label} ${b.count}`).join(', ')}. ${rated} faculty rated.`;
 
@@ -25,6 +25,7 @@ export function RatingDonut({ rows }: { rows: FacultyRatingBandRow[] }) {
                 const b = payload[0].payload as BandCount;
                 return (
                   <TooltipBox title={b.label}>
+                    {b.scoreRange && <TooltipRow label="Mean SETE score" value={b.scoreRange} />}
                     <TooltipRow label="Faculty" value={b.count} keyColor={b.color} keyShape="square" />
                     <TooltipRow label="Share" value={`${b.pct.toFixed(1)}%`} />
                   </TooltipBox>
@@ -42,7 +43,10 @@ export function RatingDonut({ rows }: { rows: FacultyRatingBandRow[] }) {
         {bands.map((b) => (
           <li key={b.label} className="flex items-center gap-2">
             <span aria-hidden className="inline-block size-2.5 shrink-0 rounded-sm" style={{ background: b.color }} />
-            <span className="flex-1 text-ink-2">{b.label}</span>
+            <span className="flex-1 text-ink-2">
+              {b.label}
+              {b.scoreRange && <span className="tabular block text-xs text-ink-muted">{b.scoreRange}</span>}
+            </span>
             <span className="tabular font-semibold text-ink">{b.count}</span>
             <span className="tabular w-12 text-right text-ink-muted">{b.pct.toFixed(0)}%</span>
           </li>

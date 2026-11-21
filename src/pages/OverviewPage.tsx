@@ -32,7 +32,15 @@ export function OverviewPage() {
   const { filters, filterKey, describe, reference, setFilters } = useFilters();
   const methodology = useQuery('methodology', fetchMethodology);
   const definitions = methodology.data?.kpis ?? [];
-  const minSeteResponses = methodology.data?.settings.find(({ key }) => key === 'min_evaluations_reported')?.value;
+  const ratingScale = methodology.data?.ratingScale;
+  const minResponsesSetting = methodology.data?.settings.find(({ key }) => key === 'min_evaluations_reported');
+  const minSeteResponses = minResponsesSetting && Math.round(minResponsesSetting.value);
+  const facultyRatingStandard = methodology.data?.settings.find(({ key }) => key === 'faculty_rating_standard')?.value
+    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  const facultyStandardFormula = minSeteResponses == null || facultyRatingStandard == null ? undefined : (
+    `Faculty need at least ${formatInt(minSeteResponses)} SETE responses in this selection to be included. ` +
+    `The KPI shows the share whose mean SETE score is ${facultyRatingStandard} or higher after rounding to two decimal places.`
+  );
   const summary = useQuery(`summary|${filterKey}`, () => fetchKpiSummary(filters));
   const trend = useQuery(`trend|${filterKey}`, () => fetchKpiTrend(filters));
   const depts = useQuery(`depts|${filterKey}`, () => fetchDepartmentKpis(filters));
@@ -102,7 +110,7 @@ export function OverviewPage() {
     if (coverageFilter === 'on-target') return status === 'on_target';
     return true;
   });
-  const ratingBands = countRatingBands(faculty.data ?? []);
+  const ratingBands = countRatingBands(faculty.data ?? [], ratingScale);
   const selectedDepartment = filters.departmentId !== null;
   const year = reference?.academicYears.find((a) => a.id === filters.academicYearId);
   const semester = reference?.semesters.find((s) => s.id === filters.semesterId);
@@ -163,6 +171,7 @@ export function OverviewPage() {
                       key={kpi.kpi_code}
                       kpi={kpi}
                       def={definitions.find((def) => def.code === kpi.kpi_code)}
+                      formulaExplanation={kpi.kpi_code === 'faculty_standard_rate' ? facultyStandardFormula : undefined}
                       caution={cautionFor(kpi.kpi_code)}
                       selected={kpi.kpi_code === focus}
                       onSelect={() => setFocus(kpi.kpi_code)}
@@ -445,7 +454,7 @@ export function OverviewPage() {
               <ChartCard
                 testId="card-faculty-rating"
                 title="Faculty Rating Distribution"
-                subtitle="Faculty counts by reportable SETE rating band"
+                subtitle="Faculty grouped by mean SETE score, rounded to two decimal places."
                 isLoading={faculty.isLoading}
                 isRefreshing={faculty.isRefreshing}
                 error={faculty.error}
@@ -456,17 +465,19 @@ export function OverviewPage() {
                   caption: 'Faculty Rating Distribution',
                   columns: [
                     { key: 'band', label: 'Rating band' },
+                    { key: 'scoreRange', label: 'Mean SETE score', align: 'right' },
                     { key: 'n', label: 'Faculty', align: 'right' },
                     { key: 'share', label: 'Share of rated faculty', align: 'right' },
                   ],
                   rows: ratingBands.bands.map((band) => ({
                     band: band.label,
+                    scoreRange: band.scoreRange ?? '—',
                     n: formatInt(band.count),
                     share: `${band.pct.toFixed(1)}%`,
                   })),
                 }}
               >
-                <RatingDonut rows={faculty.data ?? []} />
+                <RatingDonut rows={faculty.data ?? []} ratingScale={ratingScale} />
               </ChartCard>
             </div>
             <aside className="flex items-start gap-2.5 rounded-xl border border-line bg-surface px-3.5 py-3 shadow-xs" aria-labelledby="sete-interpretation" data-testid="overview-responsible-use">

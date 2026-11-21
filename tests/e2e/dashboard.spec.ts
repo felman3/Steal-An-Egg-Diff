@@ -201,8 +201,9 @@ test('reviewing a department alert applies its department and focuses the releva
 });
 
 test('the dashboard keeps responsible interpretation beside the SETE visuals', async ({ page }) => {
-  const [facultyResponse] = await Promise.all([
+  const [facultyResponse, settingsResponse] = await Promise.all([
     page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/rpc/get_faculty_performance')),
+    page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/rest/v1/analytics_settings')),
     signInAs(page, 'admin'),
   ]);
   expect(facultyResponse.ok()).toBe(true);
@@ -213,9 +214,24 @@ test('the dashboard keeps responsible interpretation beside the SETE visuals', a
   const interpretation = page.getByTestId('overview-responsible-use');
   await expect(interpretation).toContainText('course context and peer observations');
   await expect(interpretation).toContainText(/at least \d+ SETE responses in this scope/);
+
+  expect(settingsResponse.ok()).toBe(true);
+  const settings = await settingsResponse.json() as Array<{ key: string; value: number | string }>;
+  const minimum = Math.round(Number(settings.find(({ key }) => key === 'min_evaluations_reported')?.value));
+  const cutoff = Number(settings.find(({ key }) => key === 'faculty_rating_standard')?.value)
+    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  await page.getByRole('button', { name: 'About Faculty Meeting SETE Standard', exact: true }).click();
+  const definition = page.getByTestId('kpi-tooltip-faculty_standard_rate');
+  await expect(definition).toContainText(`at least ${minimum} SETE responses`);
+  await expect(definition).toContainText(`${cutoff} or higher after rounding to two decimal places`);
+  await expect(definition).toContainText(/Group target ≥ \d/);
+
   const ratings = page.getByTestId('card-faculty-rating');
+  await expect(ratings.getByRole('list', { name: 'Legend' })).toContainText('4.50–5.00');
   await ratings.getByRole('button', { name: 'Table', exact: true }).click();
-  await expect(ratings.getByRole('table')).toContainText('Outstanding');
+  const table = ratings.getByRole('table');
+  await expect(table.getByRole('columnheader', { name: 'Mean SETE score' })).toBeVisible();
+  await expect(table.getByRole('row').filter({ hasText: 'Needs Improvement' })).toContainText('1.00–2.99');
 });
 
 test.describe('access control (only authorized academic administrators)', () => {
@@ -229,18 +245,33 @@ test.describe('access control (only authorized academic administrators)', () => 
 });
 
 test('theme and account controls sit inside the compact SPECTRA header', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/login');
+  const root = page.locator('html');
+  await expect(root).toHaveAttribute('data-theme', 'light');
+  await expect(root).toHaveCSS('color-scheme', 'light');
+
   await signInAs(page, 'admin');
   const masthead = page.getByTestId('spectra-masthead');
   await expect(masthead).toHaveCSS('height', '112px');
   await expect(masthead.getByRole('combobox')).toHaveCount(0);
   await expect(masthead.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
   const theme = masthead.getByRole('button', { name: /Change theme/ });
+  await expect(theme).toHaveAccessibleName(/Current theme light/);
+  await expect(root).toHaveCSS('color-scheme', 'light');
   await theme.click();
   await expect(theme).toHaveAccessibleName(/Current theme dark/);
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(root).toHaveCSS('color-scheme', 'dark');
+  await page.reload();
+  await expect(theme).toHaveAccessibleName(/Current theme dark/);
+  await theme.click();
+  await expect(theme).toHaveAccessibleName(/Current theme system/);
+  await expect(root).toHaveCSS('color-scheme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(root).toHaveCSS('color-scheme', 'light');
   await theme.click();
   await expect(theme).toHaveAccessibleName(/Current theme light/);
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(root).toHaveAttribute('data-theme', 'light');
   await expect(page.getByRole('heading', { name: 'Supporting reports' })).toHaveCount(0);
   await expect(page.getByRole('navigation')).toHaveCount(0);
 });
